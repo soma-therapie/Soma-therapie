@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Thérapie Somatique</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sōma">
+<meta name="theme-color" content="#2a4030">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -888,8 +893,8 @@ select.input-line {
   <div class="p-page active" id="p-accueil">
     <div class="app-header" style="background:linear-gradient(160deg,#3a5a48,#5a8a6a)">
       <p class="header-role">Espace patient</p>
-      <h1 class="header-name">Bonjour,<br><em>Marie</em></h1>
-      <p class="header-sub">Mercredi 18 mars 2026</p>
+      <h1 class="header-name">Bonjour,<br><em id="patient-first-name">—</em></h1>
+      <p class="header-sub" id="patient-date"></p>
       <div class="header-actions">
         <button class="icon-btn" onclick="logout()" title="Déconnexion">⏻</button>
       </div>
@@ -898,10 +903,8 @@ select.input-line {
       <div class="section-head">
         <h2 class="section-title">Prochain RDV</h2>
       </div>
-      <div class="rdv-upcoming">
-        <div class="rdv-date-label">Aujourd'hui — 18 mars 2026</div>
-        <div class="rdv-title-big">Séance de suivi somatique</div>
-        <div class="rdv-detail">14h00 · Cabinet · 1 heure</div>
+      <div class="card" id="rdv-upcoming-container">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous à venir</p>
       </div>
 
       <div class="section-head">
@@ -914,36 +917,15 @@ select.input-line {
           <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:33%"></div></div>
         </div>
         <div id="patient-objectifs">
-          <div class="obj-item">
-            <div class="obj-check done" onclick="togglePatObj(this)"></div>
-            <div class="obj-text done">Identifier les sensations corporelles liées à l'anxiété</div>
-            <span class="obj-priority pri-haute">Haute</span>
-          </div>
-          <div class="obj-item">
-            <div class="obj-check" onclick="togglePatObj(this)"></div>
-            <div class="obj-text">Pratiquer l'ancrage somatique 3x par semaine</div>
-            <span class="obj-priority pri-moyenne">Moyenne</span>
-          </div>
-          <div class="obj-item">
-            <div class="obj-check" onclick="togglePatObj(this)"></div>
-            <div class="obj-text">Développer les ressources internes positives</div>
-            <span class="obj-priority pri-basse">Basse</span>
-          </div>
+          <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun objectif défini pour le moment</p>
         </div>
       </div>
 
       <div class="section-head">
         <h2 class="section-title">Notes de séance</h2>
       </div>
-      <div class="card">
-        <div class="session-note">
-          <div class="note-date">Séance du 11 mars 2026</div>
-          <div class="note-text">Bonne progression sur la régulation du système nerveux. Travail de pendulation efficace — Marie arrive à identifier la zone ressource rapidement. À approfondir : la connexion émotions/sensations.</div>
-        </div>
-        <div class="session-note">
-          <div class="note-date">Séance du 26 février 2026</div>
-          <div class="note-text">Introduction à la pendulation. Résistance initiale puis ouverture progressive. Exercices d'ancrage à pratiquer quotidiennement.</div>
-        </div>
+      <div class="card" id="session-notes-container">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucune note de séance pour le moment</p>
       </div>
     </div>
   </div>
@@ -1188,16 +1170,7 @@ select.input-line {
         <h2 class="section-title">Entrées précédentes</h2>
       </div>
       <div id="journalEntries">
-        <div class="journal-entry-card">
-          <div class="je-date">Lundi 17 mars 2026</div>
-          <div class="je-preview">Session de pendulation — sensation de lourdeur dans la poitrine qui s'est allégée progressivement...</div>
-          <div style="margin-top:8px"><span class="mood-tag">💪 Ancré·e</span></div>
-        </div>
-        <div class="journal-entry-card">
-          <div class="je-date">Vendredi 14 mars 2026</div>
-          <div class="je-preview">Exercice d'ancrage après une journée difficile. Retour au calme progressif, sensations dans les pieds...</div>
-          <div style="margin-top:8px"><span class="mood-tag">😌 Serein·e</span></div>
-        </div>
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucune entrée pour le moment</p>
       </div>
     </div>
   </div>
@@ -1538,9 +1511,12 @@ function renderPendingRdv(list) {
 // ======== CHARGEMENT DONNÉES PATIENT ========
 async function loadPatientData() {
   if (!currentUser) return;
+  // Mettre à jour la date
+  const dateEl = document.getElementById('patient-date');
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
   // Mettre à jour le nom
   if (currentProfile) {
-    const nameEl = document.querySelector('#p-accueil .header-name em');
+    const nameEl = document.getElementById('patient-first-name');
     if (nameEl) nameEl.textContent = currentProfile.full_name.split(' ')[0];
   }
   // Charger objectifs
