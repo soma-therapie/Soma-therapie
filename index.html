@@ -1517,7 +1517,13 @@ async function loadPatientData() {
   // Mettre à jour le nom
   if (currentProfile) {
     const nameEl = document.getElementById('patient-first-name');
-    if (nameEl) nameEl.textContent = currentProfile.full_name.split(' ')[0];
+    if (nameEl && currentProfile && currentProfile.full_name) {
+      nameEl.textContent = currentProfile.full_name.split(' ')[0];
+    } else if (nameEl) {
+      // Essayer de recharger le profil
+      const { data: p2 } = await sb.from('profiles').select('full_name').eq('id', currentUser.id).single();
+      if (p2 && p2.full_name) nameEl.textContent = p2.full_name.split(' ')[0];
+    }
   }
   // Charger objectifs
   const { data: objs } = await sb.from('objectives')
