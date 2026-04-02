@@ -700,93 +700,26 @@ select.input-line {
 
       <div class="section-head">
         <h2 class="section-title">Aujourd'hui</h2>
-        <span class="badge green">18 mars</span>
+        <span class="badge green" id="today-badge"></span>
       </div>
-      <div class="card">
-        <div class="patient-item" onclick="openPatientModal('marie')">
-          <div class="avatar av-1">M</div>
-          <div class="patient-info">
-            <div class="patient-name">Marie Dupont</div>
-            <div class="patient-meta">14h00 · Séance de suivi · 1h</div>
-          </div>
-          <span class="badge green">Confirmé</span>
-        </div>
-        <div class="patient-item" onclick="openPatientModal('lucas')">
-          <div class="avatar av-3">L</div>
-          <div class="patient-info">
-            <div class="patient-name">Lucas Bernard</div>
-            <div class="patient-meta">17h30 · Première séance · 1h30</div>
-          </div>
-          <span class="badge orange">Nouveau</span>
-        </div>
+      <div class="card" id="today-rdv-container">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous aujourd'hui</p>
       </div>
 
       <div class="section-head" style="margin-top:8px">
         <h2 class="section-title">Demandes RDV</h2>
-        <span class="badge red">3 nouvelles</span>
+        <span class="badge red" id="pending-badge" style="display:none"></span>
       </div>
-      <div class="card">
-        <div class="patient-item">
-          <div class="avatar av-2">A</div>
-          <div class="patient-info">
-            <div class="patient-name">Amélie Roux</div>
-            <div class="patient-meta">Souhaite : Lun 23 mars · 10h00</div>
-          </div>
-          <div style="display:flex;gap:6px">
-            <button class="btn-sm green" onclick="acceptRdv(this,'Amélie Roux')">✓</button>
-            <button class="btn-sm red" onclick="showToast('Demande refusée')">✗</button>
-          </div>
-        </div>
-        <div class="patient-item">
-          <div class="avatar av-4">T</div>
-          <div class="patient-info">
-            <div class="patient-name">Thomas Petit</div>
-            <div class="patient-meta">Souhaite : Mar 24 mars · 14h30</div>
-          </div>
-          <div style="display:flex;gap:6px">
-            <button class="btn-sm green" onclick="acceptRdv(this,'Thomas Petit')">✓</button>
-            <button class="btn-sm red" onclick="showToast('Demande refusée')">✗</button>
-          </div>
-        </div>
+      <div class="card" id="pending-rdv-container">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucune demande en attente</p>
       </div>
 
       <div class="section-head" style="margin-top:8px">
         <h2 class="section-title">Mes patients</h2>
         <button class="btn-sm blue" onclick="openModal('modal-add-patient')">+ Ajouter</button>
       </div>
-      <div class="card">
-        <div class="patient-item" onclick="openPatientModal('marie')">
-          <div class="avatar av-1">M</div>
-          <div class="patient-info">
-            <div class="patient-name">Marie Dupont</div>
-            <div class="patient-meta">8 séances · Dernier RDV : 11 mars</div>
-          </div>
-          <div class="patient-arrow">›</div>
-        </div>
-        <div class="patient-item" onclick="openPatientModal('amelie')">
-          <div class="avatar av-2">A</div>
-          <div class="patient-info">
-            <div class="patient-name">Amélie Roux</div>
-            <div class="patient-meta">5 séances · Dernier RDV : 5 mars</div>
-          </div>
-          <div class="patient-arrow">›</div>
-        </div>
-        <div class="patient-item" onclick="openPatientModal('lucas')">
-          <div class="avatar av-3">L</div>
-          <div class="patient-info">
-            <div class="patient-name">Lucas Bernard</div>
-            <div class="patient-meta">1 séance · Nouveau patient</div>
-          </div>
-          <div class="patient-arrow">›</div>
-        </div>
-        <div class="patient-item" onclick="openPatientModal('thomas')">
-          <div class="avatar av-4">T</div>
-          <div class="patient-info">
-            <div class="patient-name">Thomas Petit</div>
-            <div class="patient-meta">12 séances · Dernier RDV : 1 mars</div>
-          </div>
-          <div class="patient-arrow">›</div>
-        </div>
+      <div class="card" id="patients-list-container">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>
       </div>
     </div>
   </div>
@@ -1463,24 +1396,72 @@ async function checkSession() {
 // ======== CHARGEMENT DONNÉES THÉRAPEUTE ========
 async function loadTherapistData() {
   if (!currentUser) return;
+
+  // Date du jour
+  const today = new Date();
+  const todayBadge = document.getElementById('today-badge');
+  if (todayBadge) todayBadge.textContent = today.toLocaleDateString('fr-FR', {day:'numeric', month:'long'});
+
   // Charger les patients
   const { data: patients_list } = await sb.from('profiles').select('*').eq('role','patient');
   if (patients_list) renderPatientList(patients_list);
+
   // Charger les RDV en attente
   const { data: pending } = await sb.from('appointments')
     .select('*, patient:patient_id(full_name)')
-    .eq('therapist_id', currentUser.id)
-    .eq('status','pending');
+    .eq('status','pending')
+    .order('created_at', {ascending: false});
   if (pending) renderPendingRdv(pending);
+
+  // Charger les RDV d'aujourd'hui
+  const todayStart = new Date(today); todayStart.setHours(0,0,0,0);
+  const todayEnd = new Date(today); todayEnd.setHours(23,59,59,999);
+  const { data: todayRdv } = await sb.from('appointments')
+    .select('*, patient:patient_id(full_name)')
+    .eq('status','confirmed')
+    .gte('scheduled_at', todayStart.toISOString())
+    .lte('scheduled_at', todayEnd.toISOString());
+  if (todayRdv) renderTodayRdv(todayRdv);
+
+  // Mettre à jour les stats
+  const statCards = document.querySelectorAll('.stat-num');
+  if (statCards[0] && patients_list) statCards[0].textContent = patients_list.length;
+  if (statCards[1] && todayRdv) statCards[1].textContent = todayRdv.length;
+  if (statCards[3] && pending) statCards[3].textContent = pending.length;
+}
+
+function renderTodayRdv(list) {
+  const container = document.getElementById('today-rdv-container');
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous aujourd\'hui</p>';
+    return;
+  }
+  const colors = ['av-1','av-2','av-3','av-4'];
+  container.innerHTML = list.map((r, i) => {
+    const name = r.patient?.full_name || 'Patient';
+    const init = name[0].toUpperCase();
+    const time = r.scheduled_at ? new Date(r.scheduled_at).toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'}) : '';
+    return `<div class="patient-item">
+      <div class="avatar ${colors[i%4]}">${init}</div>
+      <div class="patient-info">
+        <div class="patient-name">${name}</div>
+        <div class="patient-meta">${time} · Séance de suivi</div>
+      </div>
+      <span class="badge green">Confirmé</span>
+    </div>`;
+  }).join('');
 }
 
 function renderPatientList(list) {
   const colors = ['av-1','av-2','av-3','av-4'];
-  const container = document.querySelector('#t-dashboard .card:last-of-type');
+  const container = document.getElementById('patients-list-container');
   if (!container) return;
-  // Ne remplace que si on a des vrais patients
-  if (list.length === 0) return;
-  const items = list.map((p,i) => {
+  if (list.length === 0) {
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>';
+    return;
+  }
+  container.innerHTML = list.map((p,i) => {
     const init = p.full_name ? p.full_name[0].toUpperCase() : '?';
     const av = colors[i % colors.length];
     return `<div class="patient-item" onclick="openPatientModal('${p.id}')">
@@ -1492,14 +1473,51 @@ function renderPatientList(list) {
       <div class="patient-arrow">›</div>
     </div>`;
   }).join('');
-  container.innerHTML = items;
 }
 
 function renderPendingRdv(list) {
-  if (list.length === 0) return;
-  // Mettre à jour le badge
-  const badge = document.querySelector('#t-dashboard .badge.red');
-  if (badge) badge.textContent = list.length + ' nouvelles';
+  const container = document.getElementById('pending-rdv-container');
+  const badge = document.getElementById('pending-badge');
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucune demande en attente</p>';
+    if (badge) badge.style.display = 'none';
+    return;
+  }
+  if (badge) { badge.style.display = 'inline-flex'; badge.textContent = list.length + ' nouvelles'; }
+  const colors = ['av-1','av-2','av-3','av-4'];
+  container.innerHTML = list.map((r, i) => {
+    const name = r.patient?.full_name || 'Patient';
+    const init = name[0].toUpperCase();
+    const note = r.note || 'Demande de rendez-vous';
+    return `<div class="patient-item" id="rdv-${r.id}">
+      <div class="avatar ${colors[i%4]}">${init}</div>
+      <div class="patient-info">
+        <div class="patient-name">${name}</div>
+        <div class="patient-meta">${note}</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn-sm green" onclick="acceptRdvDB('${r.id}','${name}')">✓</button>
+        <button class="btn-sm red" onclick="rejectRdvDB('${r.id}')">✗</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function acceptRdvDB(rdvId, name) {
+  const { error } = await sb.from('appointments').update({status:'confirmed'}).eq('id', rdvId);
+  if (error) { showToast('Erreur'); return; }
+  showToast(`RDV confirmé pour ${name} ✓`);
+  document.getElementById('rdv-' + rdvId)?.remove();
+  loadTherapistData();
+}
+
+async function rejectRdvDB(rdvId) {
+  const { error } = await sb.from('appointments').update({status:'cancelled'}).eq('id', rdvId);
+  if (error) { showToast('Erreur'); return; }
+  showToast('Demande refusée');
+  document.getElementById('rdv-' + rdvId)?.remove();
+  loadTherapistData();
 }
 
 // ======== CHARGEMENT DONNÉES PATIENT ========
