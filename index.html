@@ -777,31 +777,8 @@ select.input-line {
       <div class="section-head">
         <h2 class="section-title">Prochains RDV</h2>
       </div>
-      <div class="card">
-        <div class="patient-item">
-          <div class="avatar av-1" style="width:38px;height:38px;font-size:16px">M</div>
-          <div class="patient-info">
-            <div class="patient-name">Marie Dupont</div>
-            <div class="patient-meta">Aujourd'hui · 14h00–15h00</div>
-          </div>
-          <span class="badge green">Auj.</span>
-        </div>
-        <div class="patient-item">
-          <div class="avatar av-3" style="width:38px;height:38px;font-size:16px">L</div>
-          <div class="patient-info">
-            <div class="patient-name">Lucas Bernard</div>
-            <div class="patient-meta">Aujourd'hui · 17h30–19h00</div>
-          </div>
-          <span class="badge green">Auj.</span>
-        </div>
-        <div class="patient-item">
-          <div class="avatar av-2" style="width:38px;height:38px;font-size:16px">A</div>
-          <div class="patient-info">
-            <div class="patient-name">Amélie Roux</div>
-            <div class="patient-meta">Lun 23 mars · 10h00–11h00</div>
-          </div>
-          <span class="badge orange">Lun</span>
-        </div>
+      <div class="card" id="upcoming-rdv-container">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous à venir</p>
       </div>
     </div>
   </div>
@@ -1423,11 +1400,47 @@ async function loadTherapistData() {
     .lte('scheduled_at', todayEnd.toISOString());
   if (todayRdv) renderTodayRdv(todayRdv);
 
+  // Charger les prochains RDV confirmés
+  const { data: upcoming } = await sb.from('appointments')
+    .select('*, patient:patient_id(full_name)')
+    .eq('status','confirmed')
+    .gte('scheduled_at', new Date().toISOString())
+    .order('scheduled_at')
+    .limit(5);
+  if (upcoming) renderUpcomingRdv(upcoming);
+
   // Mettre à jour les stats
   const statCards = document.querySelectorAll('.stat-num');
   if (statCards[0] && patients_list) statCards[0].textContent = patients_list.length;
   if (statCards[1] && todayRdv) statCards[1].textContent = todayRdv.length;
   if (statCards[3] && pending) statCards[3].textContent = pending.length;
+}
+
+function renderUpcomingRdv(list) {
+  const container = document.getElementById('upcoming-rdv-container');
+  if (!container) return;
+  if (list.length === 0) {
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous à venir</p>';
+    return;
+  }
+  const colors = ['av-1','av-2','av-3','av-4'];
+  const today = new Date(); today.setHours(0,0,0,0);
+  container.innerHTML = list.map((r,i) => {
+    const name = r.patient?.full_name || 'Patient';
+    const init = name[0].toUpperCase();
+    const d = new Date(r.scheduled_at);
+    const isToday = d >= today && d < new Date(today.getTime() + 86400000);
+    const dateLabel = isToday ? 'Aujourd\'hui' : d.toLocaleDateString('fr-FR', {weekday:'short', day:'numeric', month:'short'});
+    const timeLabel = d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+    return `<div class="patient-item">
+      <div class="avatar ${colors[i%4]}" style="width:38px;height:38px;font-size:16px">${init}</div>
+      <div class="patient-info">
+        <div class="patient-name">${name}</div>
+        <div class="patient-meta">${dateLabel} · ${timeLabel}</div>
+      </div>
+      <span class="badge ${isToday?'green':'orange'}">${isToday?'Auj.':dateLabel}</span>
+    </div>`;
+  }).join('');
 }
 
 function renderTodayRdv(list) {
