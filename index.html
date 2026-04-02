@@ -939,16 +939,10 @@ select.input-line {
     </div>
     <div class="content">
       <div class="section-head">
-        <h2 class="section-title">Semaine du 23 mars</h2>
+        <h2 class="section-title" id="rdv-week-title">Semaine en cours</h2>
       </div>
       <div class="card">
-        <div class="date-chips" id="dateChips">
-          <div class="date-chip" onclick="selectDate(this,'Lun')"><div class="dc-day">Lun</div><div class="dc-num">23</div></div>
-          <div class="date-chip active" onclick="selectDate(this,'Mar')"><div class="dc-day">Mar</div><div class="dc-num">24</div></div>
-          <div class="date-chip" onclick="selectDate(this,'Mer')"><div class="dc-day">Mer</div><div class="dc-num">25</div></div>
-          <div class="date-chip" onclick="selectDate(this,'Jeu')"><div class="dc-day">Jeu</div><div class="dc-num">26</div></div>
-          <div class="date-chip" onclick="selectDate(this,'Ven')"><div class="dc-day">Ven</div><div class="dc-num">27</div></div>
-        </div>
+        <div class="date-chips" id="dateChips"></div>
         <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:12px">Créneaux disponibles — <strong id="selectedDateLabel">Mardi 24 mars</strong></p>
         <div class="slot-row" id="slotRow">
           <div class="slot pris">9h00</div>
@@ -1677,12 +1671,51 @@ function changeWeek(dir) {
 
 buildWeekGrid();
 
+// ======== DATES DYNAMIQUES RDV ========
+function buildDateChips() {
+  const chips = document.getElementById('dateChips');
+  const title = document.getElementById('rdv-week-title');
+  if (!chips) return;
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+  const dayNamesFull = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
+  const monthsFull = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  chips.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const chip = document.createElement('div');
+    chip.className = 'date-chip' + (i === 0 ? ' active' : '');
+    chip.innerHTML = `<div class="dc-day">${dayNames[d.getDay()]}</div><div class="dc-num">${d.getDate()}</div>`;
+    const fullLabel = `${dayNamesFull[d.getDay()]} ${d.getDate()} ${monthsFull[d.getMonth()]}`;
+    chip.onclick = () => selectDate(chip, dayNames[d.getDay()], fullLabel);
+    chips.appendChild(chip);
+  }
+  if (title) {
+    const end = new Date(monday);
+    end.setDate(monday.getDate() + 4);
+    title.textContent = `Semaine du ${monday.getDate()} ${months[monday.getMonth()]}`;
+  }
+  // Initialiser le label avec le lundi
+  const firstLabel = document.getElementById('selectedDateLabel');
+  if (firstLabel) {
+    const d = new Date(monday);
+    firstLabel.textContent = `${dayNamesFull[d.getDay()]} ${d.getDate()} ${monthsFull[d.getMonth()]}`;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', buildDateChips);
+
 // ======== PATIENT — RDV ========
-function selectDate(chip, day) {
+function selectDate(chip, day, fullLabel) {
   document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('active'));
   chip.classList.add('active');
-  const labels = {Lun:'Lundi 23 mars',Mar:'Mardi 24 mars',Mer:'Mercredi 25 mars',Jeu:'Jeudi 26 mars',Ven:'Vendredi 27 mars'};
-  document.getElementById('selectedDateLabel').textContent = labels[day];
+  const label = fullLabel || day;
+  document.getElementById('selectedDateLabel').textContent = label;
   cancelSlot();
 }
 
