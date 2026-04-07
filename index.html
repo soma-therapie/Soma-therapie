@@ -1330,15 +1330,12 @@ select.input-line {
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-title">Nouveau patient</div>
-    <div class="modal-sub">Créer un compte pour un nouveau patient</div>
-    <input class="input-line" placeholder="Prénom et nom">
-    <input class="input-line" type="email" placeholder="Adresse e-mail">
-    <input class="input-line" type="tel" placeholder="Téléphone (optionnel)">
-    <label class="form-label" style="margin-bottom:8px;display:block">Objectif initial</label>
-    <textarea class="input-area" placeholder="Premier objectif thérapeutique..." style="min-height:80px;margin-bottom:14px"></textarea>
+    <div class="modal-sub">Un email d'invitation sera envoyé au patient</div>
+    <input class="input-line" placeholder="Prénom et nom" id="new-patient-name">
+    <input class="input-line" type="email" placeholder="Adresse e-mail" id="new-patient-email">
     <div style="display:flex;gap:10px">
       <button class="btn-secondary" onclick="closeModal('modal-add-patient')">Annuler</button>
-      <button class="btn-primary" style="flex:1;justify-content:center" onclick="showToast('Patient ajouté ✓');closeModal('modal-add-patient')">Créer le compte</button>
+      <button class="btn-primary" style="flex:1;justify-content:center" onclick="invitePatient()">📧 Envoyer l'invitation</button>
     </div>
   </div>
 </div>
@@ -2449,7 +2446,56 @@ function addResPhoto(input,gridId){
   reader.readAsDataURL(input.files[0]);
 }
 
-// ======== AFFIRMATIONS ========
+// ======== INVITER PATIENT ========
+async function invitePatient() {
+  const name = document.getElementById('new-patient-name').value.trim();
+  const email = document.getElementById('new-patient-email').value.trim();
+  if (!name || !email) { showToast('Veuillez remplir le nom et l\'email'); return; }
+
+  showToast('Envoi de l\'invitation…');
+
+  // Créer le compte via Supabase Admin (invite)
+  const { data, error } = await sb.auth.admin.inviteUserByEmail(email, {
+    redirectTo: 'https://somatherapie.therapie-pro84.workers.dev',
+    data: { full_name: name, role: 'patient' }
+  });
+
+  if (error) {
+    // Si pas d'accès admin, utiliser signUp à la place
+    const { data: signData, error: signError } = await sb.auth.signUp({
+      email,
+      password: Math.random().toString(36).slice(-10),
+      options: {
+        emailRedirectTo: 'https://somatherapie.therapie-pro84.workers.dev',
+        data: { full_name: name }
+      }
+    });
+    if (signError) { showToast('Erreur : ' + signError.message); return; }
+    // Créer le profil
+    if (signData.user) {
+      await sb.from('profiles').insert({
+        id: signData.user.id,
+        role: 'patient',
+        full_name: name,
+        email: email
+      });
+    }
+  } else if (data?.user) {
+    // Créer le profil
+    await sb.from('profiles').insert({
+      id: data.user.id,
+      role: 'patient',
+      full_name: name,
+      email: email
+    });
+  }
+
+  showToast('Invitation envoyée à ' + email + ' ✓');
+  document.getElementById('new-patient-name').value = '';
+  document.getElementById('new-patient-email').value = '';
+  closeModal('modal-add-patient');
+  loadTherapistData();
+}
 let affirmations = JSON.parse(localStorage.getItem('soma-affirmations') || '[]');
 
 function openAffirmModal() {
