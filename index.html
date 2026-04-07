@@ -1177,12 +1177,12 @@ select.input-line {
         </label>
       </div>
       <div style="margin-top:14px">
-        <div class="resource-item">
+        <div class="resource-item" onclick="openResModal('Souvenirs ressources','Notez un souvenir positif — un moment de joie, de calme ou de force.')">
           <div class="res-icon" style="background:rgba(74,114,85,0.12)">🌿</div>
           <div class="res-info"><div class="res-name">Souvenirs ressources</div><div class="res-desc">Moments de joie, de calme, de force</div></div>
           <span style="color:var(--vert-clair);font-size:18px">›</span>
         </div>
-        <div class="resource-item">
+        <div class="resource-item" onclick="openAffirmModal()">
           <div class="res-icon" style="background:rgba(212,196,176,0.25)">💛</div>
           <div class="res-info"><div class="res-name">Affirmations positives</div><div class="res-desc">Phrases qui vous soutiennent</div></div>
           <span style="color:var(--vert-clair);font-size:18px">›</span>
@@ -2065,12 +2065,27 @@ async function openPatientModal(id) {
     const objContainer = document.getElementById('modal-objectifs');
     if (objContainer) {
       objContainer.innerHTML = objs && objs.length > 0
-        ? objs.map(o => `<div class="obj-item">
+        ? objs.map(o => `<div class="obj-item" id="obj-${o.id}">
             <div class="obj-check ${o.done?'done':''}" onclick="toggleObjDB(this,'${o.id}')"></div>
             <div class="obj-text ${o.done?'done':''}">${o.text}</div>
             <span class="obj-priority pri-${o.priority}">${o.priority.charAt(0).toUpperCase()+o.priority.slice(1)}</span>
+            <button onclick="deleteObj('${o.id}')" style="background:none;border:none;cursor:pointer;color:var(--rouge-doux);font-size:16px;padding:0 4px;flex-shrink:0" title="Supprimer">🗑</button>
           </div>`).join('')
         : '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun objectif défini</p>';
+    }
+    // Charger notes de séance
+    const { data: notes } = await sb.from('session_notes').select('*').eq('patient_id', id).order('created_at', {ascending:false});
+    const notesContainer = document.getElementById('modal-notes-list');
+    if (notesContainer) {
+      notesContainer.innerHTML = notes && notes.length > 0
+        ? notes.map(n => {
+            const d = new Date(n.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+            return `<div class="session-note">
+              <div class="note-date">${d}</div>
+              <div class="note-text">${n.content}</div>
+            </div>`;
+          }).join('')
+        : '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucune note pour le moment</p>';
     }
     // Charger RDV
     const { data: rdvs } = await sb.from('appointments').select('*').eq('patient_id', id).order('scheduled_at');
@@ -2133,11 +2148,27 @@ async function addObjectif() {
   }
 }
 
+async function deleteObj(objId) {
+  if (!confirm('Supprimer cet objectif ?')) return;
+  const { error } = await sb.from('objectives').delete().eq('id', objId);
+  if (error) { showToast('Erreur'); return; }
+  document.getElementById('obj-' + objId)?.remove();
+  showToast('Objectif supprimé ✓');
+}
+
 async function saveNoteDB() {
   const text = document.getElementById('new-note-text').value.trim();
-  if (!text) return;
+  if (!text || !currentModalPatientId) return;
+  const { error } = await sb.from('session_notes').insert({
+    patient_id: currentModalPatientId,
+    therapist_id: currentUser.id,
+    content: text
+  });
+  if (error) { showToast('Erreur : ' + error.message); return; }
   showToast('Note enregistrée ✓');
   document.getElementById('new-note-text').value = '';
+  // Recharger les notes
+  openPatientModal(currentModalPatientId);
 }
 
 function showTabModal(id) {
@@ -2246,13 +2277,39 @@ function setMedDur(btn, key, secs) {
 
 // ======== SON ========
 let currentSound = null;
+let currentAudio = null;
+
+const soundUrls = {
+  pluie: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_8cb749595a.mp3',
+  foret: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d1718ab41b.mp3',
+  ocean: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_4cf4ad7dc5.mp3',
+  bol: 'https://cdn.pixabay.com/download/audio/2022/01/27/audio_64f6e6b847.mp3',
+  vent: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8f4f0f76d.mp3',
+  feu: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_270f49a6f1.mp3'
+};
+
 function toggleSound(btn, sound) {
   const bars = document.querySelectorAll('.wave-bar');
-  if(currentSound===sound) {
-    btn.classList.remove('playing'); bars.forEach(b=>b.classList.remove('active')); currentSound=null;
+  if (currentSound === sound) {
+    // Arrêter
+    btn.classList.remove('playing');
+    bars.forEach(b => b.classList.remove('active'));
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    currentSound = null;
   } else {
-    document.querySelectorAll('.sound-btn').forEach(b=>b.classList.remove('playing'));
-    btn.classList.add('playing'); bars.forEach(b=>b.classList.add('active')); currentSound=sound;
+    // Arrêter le son précédent
+    document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('playing'));
+    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    // Lancer le nouveau
+    btn.classList.add('playing');
+    bars.forEach(b => b.classList.add('active'));
+    currentSound = sound;
+    try {
+      currentAudio = new Audio(soundUrls[sound]);
+      currentAudio.loop = true;
+      currentAudio.volume = 0.6;
+      currentAudio.play().catch(() => showToast('Son non disponible'));
+    } catch(e) { showToast('Son non disponible'); }
   }
 }
 
@@ -2324,6 +2381,45 @@ function addResPhoto(input,gridId){
   reader.readAsDataURL(input.files[0]);
 }
 
+// ======== AFFIRMATIONS ========
+let affirmations = JSON.parse(localStorage.getItem('soma-affirmations') || '[]');
+
+function openAffirmModal() {
+  renderAffirmations();
+  openModal('modal-affirmations');
+}
+
+function renderAffirmations() {
+  const container = document.getElementById('affirmations-list');
+  if (!container) return;
+  if (affirmations.length === 0) {
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:16px 0">Aucune affirmation pour le moment</p>';
+    return;
+  }
+  container.innerHTML = affirmations.map((a, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(200,180,154,0.2)">
+      <span style="font-size:14px;color:var(--texte-sombre);flex:1">💛 ${a}</span>
+      <button onclick="deleteAffirmation(${i})" style="background:none;border:none;cursor:pointer;color:var(--rouge-doux);font-size:16px">🗑</button>
+    </div>`).join('');
+}
+
+function addAffirmation() {
+  const input = document.getElementById('new-affirmation');
+  const text = input.value.trim();
+  if (!text) return;
+  affirmations.push(text);
+  localStorage.setItem('soma-affirmations', JSON.stringify(affirmations));
+  input.value = '';
+  renderAffirmations();
+  showToast('Affirmation ajoutée ✓');
+}
+
+function deleteAffirmation(index) {
+  affirmations.splice(index, 1);
+  localStorage.setItem('soma-affirmations', JSON.stringify(affirmations));
+  renderAffirmations();
+}
+
 // ======== TOAST ========
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -2331,6 +2427,21 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 </script>
+
+<!-- Modale affirmations -->
+<div class="modal-overlay" id="modal-affirmations">
+  <div class="modal-box">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💛 Affirmations positives</div>
+    <div class="modal-sub">Phrases qui vous soutiennent au quotidien</div>
+    <div id="affirmations-list" style="margin-bottom:16px"></div>
+    <div style="display:flex;gap:8px">
+      <input class="input-line" id="new-affirmation" placeholder="Nouvelle affirmation..." style="flex:1;margin-bottom:0">
+      <button class="btn-primary" onclick="addAffirmation()" style="flex-shrink:0">+</button>
+    </div>
+    <button class="btn-secondary" style="width:100%;text-align:center;margin-top:12px" onclick="closeModal('modal-affirmations')">Fermer</button>
+  </div>
+</div>
 
 <!-- Modale ressource -->
 <div class="res-modal-overlay" id="res-modal" onclick="closeResModal()">
