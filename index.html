@@ -45,18 +45,49 @@ body {
 }
 
 /* ————— ÉCRANS ————— */
-.screen { display:none; min-height:100vh; animation: fadeIn 0.4s ease; }
+.screen { display:none; position:fixed; inset:0; }
 .screen.active { display:block; }
+
+/* ————— LOGIN SCREEN SPECIAL ————— */
+#screen-login.active {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  background: linear-gradient(160deg, var(--vert-fonce) 0%, #1a3025 40%, #2a4035 100%);
+  padding:40px 28px; overflow-y:auto;
+  position:fixed; inset:0;
+}
+
+/* ————— SYSTÈME DE NAVIGATION PAR ÉCRANS ————— */
+.app-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--blanc-creme);
+}
+
+.app-screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--blanc-creme);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+  -webkit-overflow-scrolling: touch;
+}
+
+.app-screen.active {
+  transform: translateX(0);
+}
+
+.app-screen.prev {
+  transform: translateX(-30%);
+}
+
 @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
 
 /* ————— CONNEXION ————— */
-#screen-login {
-  background: linear-gradient(160deg, var(--vert-fonce) 0%, #1a3025 40%, #2a4035 100%);
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  padding:40px 28px; position:relative; overflow:hidden;
-}
-#screen-login.active { display:flex; }
-
 #screen-login::before {
   content:''; position:absolute; top:-80px; right:-80px;
   width:300px; height:300px; border-radius:50%;
@@ -162,11 +193,12 @@ body {
 
 /* ————— NAVIGATION ————— */
 nav {
-  position:fixed; bottom:0; left:0; right:0;
+  position: fixed; bottom:0; left:0; right:0;
   background:rgba(253,250,246,0.97); backdrop-filter:blur(12px);
   border-top:1px solid var(--beige-fonce);
   display:flex; justify-content:space-around;
-  padding:10px 0 16px; z-index:100;
+  padding:10px 0 env(safe-area-inset-bottom, 16px);
+  z-index:100;
 }
 .nav-btn {
   display:flex; flex-direction:column; align-items:center; gap:4px;
@@ -180,8 +212,18 @@ nav {
 .nav-btn svg { width:22px; height:22px; transition:transform 0.3s; }
 .nav-btn.active svg { transform:scale(1.1); }
 
+/* BOUTON RETOUR */
+.back-btn {
+  position:absolute; top:52px; left:16px; z-index:10;
+  width:36px; height:36px; border-radius:50%; border:none;
+  background:rgba(255,255,255,0.2); color:white;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:18px; transition:all 0.2s;
+}
+.back-btn:hover { background:rgba(255,255,255,0.3); }
+
 /* ————— CONTENU ————— */
-.content { padding:24px 20px 100px; }
+.content { padding:24px 20px calc(80px + env(safe-area-inset-bottom, 0px)); }
 
 /* ————— CARDS ————— */
 .card {
@@ -623,6 +665,8 @@ select.input-line {
 <!-- ====== TOAST ====== -->
 <div class="toast" id="toast"></div>
 
+<div class="app-container" id="appContainer">
+
 <!-- ============================== -->
 <!-- ÉCRAN CONNEXION                -->
 <!-- ============================== -->
@@ -669,11 +713,11 @@ select.input-line {
 <!-- ============================== -->
 <div class="screen" id="screen-therapist">
   <!-- Pages thérapeute -->
-  <div class="t-page active" id="t-dashboard">
+  <div class="app-screen active" id="t-dashboard">
     <div class="app-header">
       <p class="header-role">Espace thérapeute</p>
       <h1 class="header-name">Bonjour,<br><em>Chloé Montagnat</em></h1>
-      <p class="header-sub">Mercredi 18 mars 2026</p>
+      <p class="header-sub" id="therapist-date"></p>
       <div class="header-actions">
         <button class="icon-btn" onclick="logout()" title="Déconnexion">⏻</button>
       </div>
@@ -725,8 +769,9 @@ select.input-line {
   </div>
 
   <!-- AGENDA THÉRAPEUTE -->
-  <div class="t-page" id="t-agenda">
+  <div class="app-screen" id="t-agenda">
     <div class="app-header">
+      <button class="back-btn" onclick="showTScreen('t-dashboard')">‹</button>
       <p class="header-role">Espace thérapeute</p>
       <h1 class="header-name">Mon <em>Agenda</em></h1>
       <p class="header-sub">Gérez vos disponibilités</p>
@@ -785,22 +830,46 @@ select.input-line {
 
   <!-- NAV THÉRAPEUTE -->
   <nav id="nav-therapist">
-    <button class="nav-btn active" onclick="showTPage('t-dashboard',this)">
+    <button class="nav-btn active" onclick="showTScreen('t-dashboard',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Tableau de bord
+      Accueil
     </button>
-    <button class="nav-btn" onclick="showTPage('t-agenda',this)">
+    <button class="nav-btn" onclick="showTScreen('t-agenda',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Agenda
     </button>
+    <button class="nav-btn" onclick="showTScreen('t-patients',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Patients
+    </button>
   </nav>
+
+  <!-- ÉCRAN PATIENTS THÉRAPEUTE -->
+  <div class="app-screen" id="t-patients">
+    <div class="app-header">
+      <button class="back-btn" onclick="showTScreen('t-dashboard')">‹</button>
+      <p class="header-role">Espace thérapeute</p>
+      <h1 class="header-name">Mes <em>Patients</em></h1>
+      <p class="header-sub">Gérez vos suivis</p>
+    </div>
+    <div class="content">
+      <div class="section-head">
+        <h2 class="section-title">Liste des patients</h2>
+        <button class="btn-sm blue" onclick="openModal('modal-add-patient')">+ Ajouter</button>
+      </div>
+      <div class="card" id="t-patients-list">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ============================== -->
 <!-- ESPACE PATIENT                 -->
 <!-- ============================== -->
 <div class="screen" id="screen-patient">
-  <div class="p-page active" id="p-accueil">
+  <div class="app-screen active" id="p-accueil">
     <div class="app-header" style="background:linear-gradient(160deg,#3a5a48,#5a8a6a)">
       <p class="header-role">Espace patient</p>
       <h1 class="header-name">Bonjour,<br><em id="patient-first-name">—</em></h1>
@@ -819,12 +888,12 @@ select.input-line {
 
       <div class="section-head">
         <h2 class="section-title">Mes objectifs de séance</h2>
-        <span class="badge green">3 actifs</span>
+        <span class="badge green" id="obj-count-badge"></span>
       </div>
       <div class="card">
         <div class="progress-bar-wrap" style="margin-bottom:16px">
-          <div class="progress-label"><span>Progression globale</span><span id="progressPct">33%</span></div>
-          <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:33%"></div></div>
+          <div class="progress-label"><span>Progression globale</span><span id="progressPct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
         </div>
         <div id="patient-objectifs">
           <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun objectif défini pour le moment</p>
@@ -841,8 +910,9 @@ select.input-line {
   </div>
 
   <!-- PAGE RDV PATIENT -->
-  <div class="p-page" id="p-rdv">
+  <div class="app-screen" id="p-rdv">
     <div class="app-header" style="background:linear-gradient(160deg,#3a5565,#5a8098)">
+      <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
       <p class="header-role">Espace patient</p>
       <h1 class="header-name">Prendre<br><em>Rendez-vous</em></h1>
       <p class="header-sub">Choisissez un créneau disponible</p>
@@ -853,7 +923,7 @@ select.input-line {
       </div>
       <div class="card">
         <div class="date-chips" id="dateChips"></div>
-        <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:12px">Créneaux disponibles — <strong id="selectedDateLabel">Mardi 24 mars</strong></p>
+        <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:12px">Créneaux disponibles — <strong id="selectedDateLabel"></strong></p>
         <div class="slot-row" id="slotRow">
           <div class="slot pris">9h00</div>
           <div class="slot libre" onclick="selectSlot(this)">10h00</div>
@@ -878,19 +948,16 @@ select.input-line {
       <div class="section-head" style="margin-top:8px">
         <h2 class="section-title">Mes RDV à venir</h2>
       </div>
-      <div class="card">
-        <div class="rdv-upcoming" style="background:linear-gradient(135deg,#3a5565,#5a8098)">
-          <div class="rdv-date-label">Aujourd'hui — 18 mars · 14h00</div>
-          <div class="rdv-title-big">Séance de suivi somatique</div>
-          <div class="rdv-detail">Cabinet · 1 heure · Confirmé</div>
-        </div>
+      <div class="card" id="patient-upcoming-rdv">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous à venir</p>
       </div>
     </div>
   </div>
 
   <!-- PAGE MÉDITATION -->
-  <div class="p-page" id="p-meditation">
+  <div class="app-screen" id="p-meditation">
     <div class="app-header" style="background:linear-gradient(160deg,#2a4030,#4a7255)">
+      <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
       <p class="header-role">Espace patient</p>
       <h1 class="header-name">Méditation<br><em>& Pendulation</em></h1>
       <p class="header-sub">Exercices guidés pour revenir à soi</p>
@@ -1047,8 +1114,9 @@ select.input-line {
   </div>
 
   <!-- PAGE JOURNAL -->
-  <div class="p-page" id="p-journal">
+  <div class="app-screen" id="p-journal">
     <div class="app-header" style="background:linear-gradient(160deg,#5a4838,#8a7060)">
+      <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
       <p class="header-role">Espace patient</p>
       <h1 class="header-name">Journal<br><em>de bord</em></h1>
       <p class="header-sub">Vos ressentis, vos observations</p>
@@ -1080,8 +1148,9 @@ select.input-line {
   </div>
 
   <!-- PAGE RESSOURCES -->
-  <div class="p-page" id="p-ressources">
+  <div class="app-screen" id="p-ressources">
     <div class="app-header" style="background:linear-gradient(160deg,#3a5a55,#5a8a7a)">
+      <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
       <p class="header-role">Espace patient</p>
       <h1 class="header-name">Mes<br><em>Ressources</em></h1>
       <p class="header-sub">Internes & externes — votre ancre</p>
@@ -1158,23 +1227,23 @@ select.input-line {
 
   <!-- NAV PATIENT (5 onglets) -->
   <nav id="nav-patient">
-    <button class="nav-btn active" onclick="showPPage('p-accueil',this)">
+    <button class="nav-btn active" onclick="showPScreen('p-accueil',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
       Accueil
     </button>
-    <button class="nav-btn" onclick="showPPage('p-meditation',this)">
+    <button class="nav-btn" onclick="showPScreen('p-meditation',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
       Méditation
     </button>
-    <button class="nav-btn" onclick="showPPage('p-journal',this)">
+    <button class="nav-btn" onclick="showPScreen('p-journal',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></svg>
       Journal
     </button>
-    <button class="nav-btn" onclick="showPPage('p-ressources',this)">
+    <button class="nav-btn" onclick="showPScreen('p-ressources',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
       Ressources
     </button>
-    <button class="nav-btn" onclick="showPPage('p-rdv',this)">
+    <button class="nav-btn" onclick="showPScreen('p-rdv',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       RDV
     </button>
@@ -1335,10 +1404,21 @@ async function loginAs(role) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   if (r === 'therapist') {
     document.getElementById('screen-therapist').classList.add('active');
+    // Reset navigation state
+    currentTScreen = 't-dashboard';
+    document.querySelectorAll('#screen-therapist .app-screen').forEach(s => { s.classList.remove('active','prev'); s.style.transform = ''; });
+    document.getElementById('t-dashboard').classList.add('active');
+    // Set date
+    const dateEl = document.getElementById('therapist-date');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     showToast('Bienvenue, Chloé 🌿');
     loadTherapistData();
   } else {
     document.getElementById('screen-patient').classList.add('active');
+    // Reset navigation state
+    currentPScreen = 'p-accueil';
+    document.querySelectorAll('#screen-patient .app-screen').forEach(s => { s.classList.remove('active','prev'); s.style.transform = ''; });
+    document.getElementById('p-accueil').classList.add('active');
     const name = profile ? profile.full_name.split(' ')[0] : 'vous';
     showToast('Bienvenue, ' + name + ' 🌿');
     loadPatientData();
@@ -1363,9 +1443,17 @@ async function checkSession() {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   if (profile.role === 'therapist') {
     document.getElementById('screen-therapist').classList.add('active');
+    currentTScreen = 't-dashboard';
+    document.querySelectorAll('#screen-therapist .app-screen').forEach(s => { s.classList.remove('active','prev'); s.style.transform = ''; });
+    document.getElementById('t-dashboard').classList.add('active');
+    const dateEl = document.getElementById('therapist-date');
+    if (dateEl) dateEl.textContent = new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     loadTherapistData();
   } else {
     document.getElementById('screen-patient').classList.add('active');
+    currentPScreen = 'p-accueil';
+    document.querySelectorAll('#screen-patient .app-screen').forEach(s => { s.classList.remove('active','prev'); s.style.transform = ''; });
+    document.getElementById('p-accueil').classList.add('active');
     loadPatientData();
   }
 }
@@ -1468,24 +1556,21 @@ function renderTodayRdv(list) {
 
 function renderPatientList(list) {
   const colors = ['av-1','av-2','av-3','av-4'];
-  const container = document.getElementById('patients-list-container');
-  if (!container) return;
-  if (list.length === 0) {
-    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>';
-    return;
-  }
-  container.innerHTML = list.map((p,i) => {
-    const init = p.full_name ? p.full_name[0].toUpperCase() : '?';
-    const av = colors[i % colors.length];
-    return `<div class="patient-item" onclick="openPatientModal('${p.id}')">
-      <div class="avatar ${av}">${init}</div>
+  const containers = ['patients-list-container', 't-patients-list'];
+  const html = list.length === 0
+    ? '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>'
+    : list.map((p,i) => `<div class="patient-item" onclick="openPatientModal('${p.id}')">
+      <div class="avatar ${colors[i%4]}">${(p.full_name||'?')[0].toUpperCase()}</div>
       <div class="patient-info">
-        <div class="patient-name">${p.full_name}</div>
+        <div class="patient-name">${p.full_name||'Sans nom'}</div>
         <div class="patient-meta">${p.email}</div>
       </div>
       <div class="patient-arrow">›</div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
+  containers.forEach(id => {
+    const c = document.getElementById(id);
+    if (c) c.innerHTML = html;
+  });
 }
 
 function renderPendingRdv(list) {
@@ -1643,19 +1728,86 @@ async function confirmRdvDB() {
 
 document.addEventListener('DOMContentLoaded', checkSession);
 
-// ======== NAVIGATION THÉRAPEUTE ========
-function showTPage(id, btn) {
-  document.querySelectorAll('.t-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('#nav-therapist .nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  btn.classList.add('active');
+async function loadPatientsList() {
+  const { data: list } = await sb.from('profiles').select('*').eq('role','patient');
+  const container = document.getElementById('t-patients-list');
+  if (!container) return;
+  if (!list || list.length === 0) {
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>';
+    return;
+  }
+  const colors = ['av-1','av-2','av-3','av-4'];
+  container.innerHTML = list.map((p,i) => `
+    <div class="patient-item" onclick="openPatientModal('${p.id}')">
+      <div class="avatar ${colors[i%4]}">${(p.full_name||'?')[0].toUpperCase()}</div>
+      <div class="patient-info">
+        <div class="patient-name">${p.full_name || 'Sans nom'}</div>
+        <div class="patient-meta">${p.email}</div>
+      </div>
+      <div class="patient-arrow">›</div>
+    </div>`).join('');
 }
 
-function showPPage(id, btn) {
-  document.querySelectorAll('.p-page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('#nav-patient .nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  btn.classList.add('active');
+// ======== NAVIGATION THÉRAPEUTE ========
+let currentTScreen = 't-dashboard';
+function showTScreen(id, btn) {
+  const current = document.getElementById(currentTScreen);
+  const next = document.getElementById(id);
+  if (!next || id === currentTScreen) return;
+  
+  // Animation direction
+  const isGoingBack = id === 't-dashboard';
+  if (isGoingBack) {
+    current.style.transform = 'translateX(100%)';
+    next.style.transform = 'translateX(0)';
+  } else {
+    current.classList.add('prev');
+    next.style.transform = 'translateX(0)';
+  }
+  
+  current.classList.remove('active');
+  setTimeout(() => { current.style.transform = ''; current.classList.remove('prev'); }, 350);
+  next.classList.add('active');
+  currentTScreen = id;
+
+  // Update nav
+  if (btn) {
+    document.querySelectorAll('#nav-therapist .nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // Load data for screens
+  if (id === 't-patients') loadPatientsList();
+  if (id === 't-agenda') buildWeekGrid();
+}
+
+// ======== NAVIGATION PATIENT ========
+let currentPScreen = 'p-accueil';
+function showPScreen(id, btn) {
+  const current = document.getElementById(currentPScreen);
+  const next = document.getElementById(id);
+  if (!next || id === currentPScreen) return;
+
+  const isGoingBack = id === 'p-accueil';
+  if (isGoingBack) {
+    current.style.transform = 'translateX(100%)';
+    next.style.transform = 'translateX(0)';
+  } else {
+    current.classList.add('prev');
+    next.style.transform = 'translateX(0)';
+  }
+
+  current.classList.remove('active');
+  setTimeout(() => { current.style.transform = ''; current.classList.remove('prev'); }, 350);
+  next.classList.add('active');
+  currentPScreen = id;
+
+  if (btn) {
+    document.querySelectorAll('#nav-patient .nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  if (id === 'p-rdv') buildDateChips();
 }
 
 // ======== AGENDA ========
