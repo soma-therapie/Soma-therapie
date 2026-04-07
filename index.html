@@ -1666,26 +1666,51 @@ const agendaData = {
   3: ['bloque','libre','libre'],
   4: ['libre','occupe','libre']
 };
-const slots = ['9h00','11h00','14h00'];
-const days = ['Lun','Mar','Mer','Jeu','Ven'];
-const nums = [23,24,25,26,27];
+const timeSlots = ['9h00','11h00','14h00'];
+const dayNamesShort = ['Lun','Mar','Mer','Jeu','Ven'];
 let weekOffset = 0;
+
+function getMonday(offset) {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = today.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7);
+  const monday = new Date(today.setDate(diff));
+  monday.setHours(0,0,0,0);
+  return monday;
+}
 
 function buildWeekGrid() {
   const grid = document.getElementById('weekGrid');
   if (!grid) return;
   grid.innerHTML = '';
-  days.forEach((d,i) => {
+  const monday = getMonday(weekOffset);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monthsFull = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
+
+  // Mettre à jour le titre
+  const end = new Date(monday); end.setDate(monday.getDate() + 4);
+  const titleEl = document.getElementById('weekTitle');
+  if (titleEl) {
+    if (monday.getMonth() === end.getMonth()) {
+      titleEl.textContent = `${monday.getDate()} – ${end.getDate()} ${monthsFull[monday.getMonth()]} ${monday.getFullYear()}`;
+    } else {
+      titleEl.textContent = `${monday.getDate()} ${monthsFull[monday.getMonth()]} – ${end.getDate()} ${monthsFull[end.getMonth()]} ${end.getFullYear()}`;
+    }
+  }
+
+  dayNamesShort.forEach((d,i) => {
+    const dayDate = new Date(monday);
+    dayDate.setDate(monday.getDate() + i);
+    const isToday = dayDate.getTime() === today.getTime();
     const col = document.createElement('div');
     col.className = 'day-col';
-    const isToday = i === 2 && weekOffset === 0;
     col.innerHTML = `<div class="day-name">${d}</div>
-      <div class="day-num${isToday?' today':''}">${nums[i]}</div>`;
+      <div class="day-num${isToday?' today':''}">${dayDate.getDate()}</div>`;
     const types = agendaData[i] || ['bloque','bloque','bloque'];
     types.forEach((t,si) => {
       const s = document.createElement('div');
       s.className = `time-slot ${t}`;
-      s.textContent = t==='occupe' ? slots[si] : t==='libre' ? slots[si] : '';
+      s.textContent = t !== 'bloque' ? timeSlots[si] : '';
       if(t==='libre') s.onclick = () => { s.classList.remove('libre'); s.classList.add('occupe'); showToast('Créneau bloqué'); };
       col.appendChild(s);
     });
@@ -1695,9 +1720,8 @@ function buildWeekGrid() {
 
 function changeWeek(dir) {
   weekOffset += dir;
-  const base = 18 + weekOffset*7;
-  document.getElementById('weekTitle').textContent = `${base} – ${base+4} mars 2026`;
   buildWeekGrid();
+}
 }
 
 buildWeekGrid();
