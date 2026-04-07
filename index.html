@@ -391,7 +391,7 @@ nav {
 .week-nav button:hover { border-color:var(--vert-moyen); color:var(--vert-fonce); }
 .week-title { font-family:'Cormorant Garamond',serif; font-size:20px; color:var(--vert-fonce); }
 
-.day-cols { display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:16px; }
+.day-cols { display:grid; grid-template-columns:repeat(6,1fr); gap:4px; margin-bottom:16px; }
 .day-col { text-align:center; }
 .day-name { font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--texte-moyen); margin-bottom:6px; }
 .day-num {
@@ -929,12 +929,7 @@ select.input-line {
         <div class="date-chips" id="dateChips"></div>
         <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:12px">Créneaux disponibles — <strong id="selectedDateLabel"></strong></p>
         <div class="slot-row" id="slotRow">
-          <div class="slot pris">9h00</div>
-          <div class="slot libre" onclick="selectSlot(this)">10h00</div>
-          <div class="slot libre" onclick="selectSlot(this)">11h00</div>
-          <div class="slot pris">14h00</div>
-          <div class="slot libre" onclick="selectSlot(this)">15h30</div>
-          <div class="slot libre" onclick="selectSlot(this)">17h00</div>
+          <p style="color:var(--texte-moyen);font-size:13px">Sélectionnez une date pour voir les créneaux disponibles</p>
         </div>
       </div>
 
@@ -1791,24 +1786,31 @@ function showPScreen(id, btn) {
 }
 
 // ======== AGENDA ========
-const agendaData = {
-  0: ['libre','occupe','libre'],
-  1: ['pris','libre','occupe'],
-  2: ['libre','libre','pris'],
-  3: ['bloque','libre','libre'],
-  4: ['libre','occupe','libre']
+// Horaires par défaut
+const DEFAULT_SLOTS = {
+  1: ['18:30', '19:30'], // Lundi
+  2: ['18:30', '19:30'], // Mardi
+  3: ['18:30', '19:30'], // Mercredi
+  4: ['18:30', '19:30'], // Jeudi
+  5: ['18:30', '19:30'], // Vendredi
+  6: ['09:30', '10:30', '11:30', '13:30', '14:30', '15:30'], // Samedi
 };
-const timeSlots = ['9h00','11h00','14h00'];
-const dayNamesShort = ['Lun','Mar','Mer','Jeu','Ven'];
+
 let weekOffset = 0;
+let manualOverrides = {}; // { 'YYYY-MM-DD_HH:MM': 'bloque' | 'libre' }
 
 function getMonday(offset) {
   const today = new Date();
   const day = today.getDay();
   const diff = today.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7);
-  const monday = new Date(today.setDate(diff));
+  const monday = new Date(today);
+  monday.setDate(diff);
   monday.setHours(0,0,0,0);
   return monday;
+}
+
+function formatDate(d) {
+  return d.toISOString().split('T')[0];
 }
 
 function buildWeekGrid() {
@@ -1818,9 +1820,10 @@ function buildWeekGrid() {
   const monday = getMonday(weekOffset);
   const today = new Date(); today.setHours(0,0,0,0);
   const monthsFull = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
+  const dayNamesShort = ['Lun','Mar','Mer','Jeu','Ven','Sam'];
 
-  // Mettre à jour le titre
-  const end = new Date(monday); end.setDate(monday.getDate() + 4);
+  // Titre semaine
+  const end = new Date(monday); end.setDate(monday.getDate() + 5);
   const titleEl = document.getElementById('weekTitle');
   if (titleEl) {
     if (monday.getMonth() === end.getMonth()) {
@@ -1830,24 +1833,60 @@ function buildWeekGrid() {
     }
   }
 
-  dayNamesShort.forEach((d,i) => {
+  // 6 jours : lun → sam
+  for (let i = 0; i < 6; i++) {
     const dayDate = new Date(monday);
     dayDate.setDate(monday.getDate() + i);
+    const dayNum = dayDate.getDay(); // 1=lun, 6=sam
     const isToday = dayDate.getTime() === today.getTime();
+    const isPast = dayDate < today;
+    const dateKey = formatDate(dayDate);
+
     const col = document.createElement('div');
     col.className = 'day-col';
-    col.innerHTML = `<div class="day-name">${d}</div>
+    col.innerHTML = `<div class="day-name">${dayNamesShort[i]}</div>
       <div class="day-num${isToday?' today':''}">${dayDate.getDate()}</div>`;
-    const types = agendaData[i] || ['bloque','bloque','bloque'];
-    types.forEach((t,si) => {
+
+    const slots = DEFAULT_SLOTS[dayNum] || [];
+    if (slots.length === 0) {
+      // Jour sans créneaux par défaut
       const s = document.createElement('div');
-      s.className = `time-slot ${t}`;
-      s.textContent = t !== 'bloque' ? timeSlots[si] : '';
-      if(t==='libre') s.onclick = () => { s.classList.remove('libre'); s.classList.add('occupe'); showToast('Créneau bloqué'); };
+      s.className = 'time-slot bloque';
+      s.style.fontSize = '9px';
       col.appendChild(s);
-    });
+    } else {
+      slots.forEach(time => {
+        const key = `${dateKey}_${time}`;
+        const override = manualOverrides[key];
+        let status = override || 'libre';
+        // Vérifier si RDV existant (on le gère via appointments)
+        const s = document.createElement('div');
+        s.className = `time-slot ${status}`;
+        s.textContent = time;
+        s.style.fontSize = '10px';
+        if (!isPast) {
+          s.onclick = () => toggleSlot(s, key);
+        } else {
+          s.style.opacity = '0.4';
+          s.style.cursor = 'default';
+        }
+        col.appendChild(s);
+      });
+    }
     grid.appendChild(col);
-  });
+  }
+}
+
+function toggleSlot(el, key) {
+  if (el.classList.contains('libre')) {
+    el.classList.remove('libre'); el.classList.add('bloque');
+    manualOverrides[key] = 'bloque';
+    showToast('Créneau bloqué');
+  } else if (el.classList.contains('bloque')) {
+    el.classList.remove('bloque'); el.classList.add('libre');
+    delete manualOverrides[key];
+    showToast('Créneau libéré');
+  }
 }
 
 function changeWeek(dir) {
@@ -1941,6 +1980,29 @@ function selectDate(chip, day, fullLabel) {
   const label = fullLabel || day;
   document.getElementById('selectedDateLabel').textContent = label;
   cancelSlot();
+
+  // Afficher les créneaux selon le jour
+  const slotRow = document.getElementById('slotRow');
+  if (!slotRow) return;
+
+  // Trouver le numéro du jour (1=lun...6=sam)
+  const dayMap = {'Lun':1,'Mar':2,'Mer':3,'Jeu':4,'Ven':5,'Sam':6};
+  const dayNum = dayMap[day] || 1;
+  const slots = DEFAULT_SLOTS[dayNum] || [];
+
+  if (slots.length === 0) {
+    slotRow.innerHTML = '<p style="color:var(--texte-moyen);font-size:13px">Pas de créneaux ce jour</p>';
+    return;
+  }
+
+  slotRow.innerHTML = slots.map(time => {
+    // Vérifier les overrides
+    const chips = document.getElementById('dateChips');
+    const activeChip = chips?.querySelector('.date-chip.active');
+    const dateNum = activeChip?.querySelector('.dc-num')?.textContent;
+    // Construire la clé de date approximative
+    return `<div class="slot libre" onclick="selectSlot(this)" data-time="${time}">${time}</div>`;
+  }).join('');
 }
 
 let selectedSlot = null;
