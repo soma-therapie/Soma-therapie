@@ -2331,14 +2331,15 @@ function setMedDur(btn, key, secs) {
 let currentSound = null;
 let currentAudio = null;
 
+const AUDIO_BASE = 'https://raw.githubusercontent.com/soma-therapie/Soma-therapie/main/';
 const soundUrls = {
-  pluie: '/pluie.wav',
-  foret: '/foret.wav',
-  ocean: '/mer.mp3',
-  bol: '/bol.mp3',
-  vent: '/vent.wav',
-  feu: '/feu.mp3',
-  orage: '/orage.mp3'
+  pluie: AUDIO_BASE + 'pluie.wav',
+  foret: AUDIO_BASE + 'foret.wav',
+  ocean: AUDIO_BASE + 'mer.mp3',
+  bol: AUDIO_BASE + 'bol.mp3',
+  vent: AUDIO_BASE + 'vent.wav',
+  feu: AUDIO_BASE + 'feu.mp3',
+  orage: AUDIO_BASE + 'orage.mp3'
 };
 
 function toggleSound(btn, sound) {
