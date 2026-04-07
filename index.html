@@ -1816,7 +1816,7 @@ function formatDate(d) {
   return d.toISOString().split('T')[0];
 }
 
-function buildWeekGrid() {
+async function buildWeekGrid() {
   const grid = document.getElementById('weekGrid');
   if (!grid) return;
   grid.innerHTML = '';
@@ -1836,11 +1836,44 @@ function buildWeekGrid() {
     }
   }
 
+  // Charger les RDV confirmés de la semaine
+  const weekStart = new Date(monday);
+  const weekEnd = new Date(monday); weekEnd.setDate(monday.getDate() + 6); weekEnd.setHours(23,59,59,999);
+  let confirmedSlots = {};
+  let pendingSlots = {};
+  try {
+    const { data: rdvs } = await sb.from('appointments')
+      .select('*, patient:patient_id(full_name)')
+      .in('status', ['confirmed','pending'])
+      .gte('scheduled_at', weekStart.toISOString())
+      .lte('scheduled_at', weekEnd.toISOString());
+    if (rdvs) {
+      rdvs.forEach(r => {
+        const d = new Date(r.scheduled_at);
+        const dateKey = formatDate(d);
+        const timeKey = d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}).replace('h',':').replace(':', ':');
+        // Trouver le créneau le plus proche
+        const daySlots = DEFAULT_SLOTS[d.getDay()] || [];
+        daySlots.forEach(slot => {
+          const slotHour = parseInt(slot.split(':')[0]);
+          const slotMin = parseInt(slot.split(':')[1]);
+          const rdvHour = d.getHours();
+          const rdvMin = d.getMinutes();
+          if (Math.abs((slotHour*60+slotMin) - (rdvHour*60+rdvMin)) < 30) {
+            const key = `${dateKey}_${slot}`;
+            if (r.status === 'confirmed') confirmedSlots[key] = r.patient?.full_name || 'Patient';
+            else pendingSlots[key] = r.patient?.full_name || 'Patient';
+          }
+        });
+      });
+    }
+  } catch(e) {}
+
   // 6 jours : lun → sam
   for (let i = 0; i < 6; i++) {
     const dayDate = new Date(monday);
     dayDate.setDate(monday.getDate() + i);
-    const dayNum = dayDate.getDay(); // 1=lun, 6=sam
+    const dayNum = dayDate.getDay();
     const isToday = dayDate.getTime() === today.getTime();
     const isPast = dayDate < today;
     const dateKey = formatDate(dayDate);
@@ -1852,24 +1885,32 @@ function buildWeekGrid() {
 
     const slots = DEFAULT_SLOTS[dayNum] || [];
     if (slots.length === 0) {
-      // Jour sans créneaux par défaut
       const s = document.createElement('div');
       s.className = 'time-slot bloque';
-      s.style.fontSize = '9px';
       col.appendChild(s);
     } else {
       slots.forEach(time => {
         const key = `${dateKey}_${time}`;
         const override = manualOverrides[key];
-        let status = override || 'libre';
-        // Vérifier si RDV existant (on le gère via appointments)
+        let status = 'libre';
+        let label = time;
+        let title = '';
+        if (confirmedSlots[key]) { status = 'occupe'; title = confirmedSlots[key]; }
+        else if (pendingSlots[key]) { status = 'pending'; title = pendingSlots[key] + ' (en attente)'; }
+        else if (override === 'bloque') { status = 'bloque'; }
+
         const s = document.createElement('div');
         s.className = `time-slot ${status}`;
-        s.textContent = time;
+        s.textContent = label;
         s.style.fontSize = '10px';
-        if (!isPast) {
+        if (title) s.title = title;
+        if (!isPast && status !== 'occupe' && status !== 'pending') {
           s.onclick = () => toggleSlot(s, key);
-        } else {
+        } else if (status === 'pending') {
+          s.style.background = 'rgba(180,120,50,0.3)';
+          s.style.color = '#7a5020';
+          s.style.cursor = 'default';
+        } else if (isPast) {
           s.style.opacity = '0.4';
           s.style.cursor = 'default';
         }
@@ -1897,7 +1938,7 @@ function changeWeek(dir) {
   buildWeekGrid();
 }
 
-buildWeekGrid();
+document.addEventListener("DOMContentLoaded", () => buildWeekGrid());
 
 // ======== DATES DYNAMIQUES RDV ========
 let rdvWeekOffset = 0;
@@ -2282,27 +2323,24 @@ let currentSound = null;
 let currentAudio = null;
 
 const soundUrls = {
-  pluie: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_8cb749595a.mp3',
-  foret: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d1718ab41b.mp3',
-  ocean: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_4cf4ad7dc5.mp3',
-  bol: 'https://cdn.pixabay.com/download/audio/2022/01/27/audio_64f6e6b847.mp3',
-  vent: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_c8f4f0f76d.mp3',
-  feu: 'https://cdn.pixabay.com/download/audio/2022/03/10/audio_270f49a6f1.mp3'
+  pluie: 'https://assets.mixkit.co/active_storage/sfx/2515/2515-preview.mp3',
+  foret: 'https://assets.mixkit.co/active_storage/sfx/2517/2517-preview.mp3',
+  ocean: 'https://assets.mixkit.co/active_storage/sfx/2518/2518-preview.mp3',
+  bol: 'https://assets.mixkit.co/active_storage/sfx/2516/2516-preview.mp3',
+  vent: 'https://assets.mixkit.co/active_storage/sfx/2514/2514-preview.mp3',
+  feu: 'https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3'
 };
 
 function toggleSound(btn, sound) {
   const bars = document.querySelectorAll('.wave-bar');
   if (currentSound === sound) {
-    // Arrêter
     btn.classList.remove('playing');
     bars.forEach(b => b.classList.remove('active'));
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     currentSound = null;
   } else {
-    // Arrêter le son précédent
     document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('playing'));
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
-    // Lancer le nouveau
     btn.classList.add('playing');
     bars.forEach(b => b.classList.add('active'));
     currentSound = sound;
@@ -2310,7 +2348,12 @@ function toggleSound(btn, sound) {
       currentAudio = new Audio(soundUrls[sound]);
       currentAudio.loop = true;
       currentAudio.volume = 0.6;
-      currentAudio.play().catch(() => showToast('Son non disponible'));
+      const playPromise = currentAudio.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          showToast('Appuyez d\'abord sur l\'écran pour activer le son');
+        });
+      }
     } catch(e) { showToast('Son non disponible'); }
   }
 }
