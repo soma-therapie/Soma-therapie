@@ -1686,16 +1686,18 @@ async function saveJournalEntryDB() {
 async function confirmRdvDB() {
   if (!selectedSlot || !currentUser) return;
   const label = document.getElementById('selectedDateLabel').textContent;
+  const patientNote = document.querySelector('#bookingCard .input-area')?.value.trim() || '';
   // Chercher l'id du thérapeute
   const { data: therapists } = await sb.from('profiles').select('id').eq('role','therapist').limit(1);
   if (!therapists || therapists.length===0) { showToast('Aucun thérapeute trouvé'); return; }
   const therapistId = therapists[0].id;
+  const noteText = `${label} à ${selectedSlot}${patientNote ? ' — ' + patientNote : ''}`;
   const { error } = await sb.from('appointments').insert({
     patient_id: currentUser.id,
     therapist_id: therapistId,
     scheduled_at: new Date().toISOString(),
     status: 'pending',
-    note: label + ' à ' + selectedSlot
+    note: noteText
   });
   if (error) { showToast('Erreur : ' + error.message); return; }
   showToast('Demande envoyée à votre thérapeute ✓');
