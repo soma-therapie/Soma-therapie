@@ -223,7 +223,7 @@ nav {
 .back-btn:hover { background:rgba(255,255,255,0.3); }
 
 /* ————— CONTENU ————— */
-.content { padding:24px 20px calc(80px + env(safe-area-inset-bottom, 0px)); }
+.content { padding:24px 20px calc(100px + env(safe-area-inset-bottom, 0px)); }
 
 /* ————— CARDS ————— */
 .card {
@@ -920,6 +920,10 @@ select.input-line {
     <div class="content">
       <div class="section-head">
         <h2 class="section-title" id="rdv-week-title">Semaine en cours</h2>
+        <div id="rdv-week-nav" style="display:flex;gap:6px">
+          <button class="rdv-prev" onclick="changeRdvWeek(-1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--beige-fonce);background:white;cursor:pointer;font-size:14px;color:var(--texte-moyen)">‹</button>
+          <button class="rdv-next" onclick="changeRdvWeek(1)" style="width:32px;height:32px;border-radius:50%;border:1.5px solid var(--beige-fonce);background:white;cursor:pointer;font-size:14px;color:var(--texte-moyen)">›</button>
+        </div>
       </div>
       <div class="card">
         <div class="date-chips" id="dateChips"></div>
@@ -1293,21 +1297,7 @@ select.input-line {
       </div>
 
       <div id="modal-objectifs">
-        <div class="obj-item">
-          <div class="obj-check done" onclick="toggleObj(this)"></div>
-          <div class="obj-text done">Identifier les sensations corporelles liées à l'anxiété</div>
-          <span class="obj-priority pri-haute">Haute</span>
-        </div>
-        <div class="obj-item">
-          <div class="obj-check" onclick="toggleObj(this)"></div>
-          <div class="obj-text">Pratiquer l'ancrage somatique 3x par semaine</div>
-          <span class="obj-priority pri-moyenne">Moyenne</span>
-        </div>
-        <div class="obj-item">
-          <div class="obj-check" onclick="toggleObj(this)"></div>
-          <div class="obj-text">Développer les ressources internes positives</div>
-          <span class="obj-priority pri-basse">Basse</span>
-        </div>
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun objectif défini</p>
       </div>
     </div>
 
@@ -1315,30 +1305,20 @@ select.input-line {
     <div id="tab-notes" style="display:none">
       <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce);margin-bottom:12px">Note de séance</div>
       <textarea class="input-area" placeholder="Observations de la séance d'aujourd'hui..." id="new-note-text"></textarea>
-      <button class="btn-primary" style="margin-top:10px" onclick="saveNote()">💾 Enregistrer la note</button>
+      <button class="btn-primary" style="margin-top:10px" onclick="saveNoteDB()">💾 Enregistrer la note</button>
       <div class="sep"></div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce);margin-bottom:12px">Historique</div>
-      <div class="session-note">
-        <div class="note-date">11 mars 2026</div>
-        <div class="note-text">Bonne progression sur la régulation du système nerveux. Travail de pendulation efficace.</div>
-      </div>
-      <div class="session-note">
-        <div class="note-date">26 février 2026</div>
-        <div class="note-text">Introduction à la pendulation. Résistance initiale puis ouverture progressive.</div>
+      <div id="modal-notes-list">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucune note pour le moment</p>
       </div>
     </div>
 
     <!-- Onglet RDV -->
     <div id="tab-rdv-th" style="display:none">
       <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce);margin-bottom:12px">Prochains rendez-vous</div>
-      <div class="rdv-upcoming" style="margin-bottom:12px">
-        <div class="rdv-date-label">Aujourd'hui · 18 mars · 14h00</div>
-        <div class="rdv-title-big">Séance de suivi</div>
-        <div class="rdv-detail">1 heure · Cabinet</div>
+      <div id="modal-patient-rdv-list">
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous à venir</p>
       </div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce);margin:16px 0 10px">Planifier un RDV</div>
-      <select class="input-line"><option>Lundi 23 mars · 10h00</option><option>Mercredi 25 mars · 14h00</option><option>Vendredi 27 mars · 9h00</option></select>
-      <button class="btn-primary" onclick="showToast('RDV planifié ✓');closeModal('modal-patient')">Confirmer le rendez-vous</button>
     </div>
 
     <div style="margin-top:20px">
@@ -1878,40 +1858,78 @@ function changeWeek(dir) {
 buildWeekGrid();
 
 // ======== DATES DYNAMIQUES RDV ========
+let rdvWeekOffset = 0;
+
 function buildDateChips() {
   const chips = document.getElementById('dateChips');
   const title = document.getElementById('rdv-week-title');
   if (!chips) return;
-  const today = new Date();
+
+  const today = new Date(); today.setHours(0,0,0,0);
   const dayOfWeek = today.getDay();
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+  const thisMonday = new Date(today);
+  thisMonday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+  const monday = new Date(thisMonday);
+  monday.setDate(thisMonday.getDate() + rdvWeekOffset * 7);
+
   const dayNames = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
   const dayNamesFull = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
   const months = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
   const monthsFull = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
   chips.innerHTML = '';
+
+  // Navigation semaine
+  const nav = document.getElementById('rdv-week-nav');
+  if (nav) {
+    nav.querySelector('.rdv-prev').disabled = rdvWeekOffset <= 0;
+    nav.querySelector('.rdv-next').disabled = rdvWeekOffset >= 3;
+  }
+
   for (let i = 0; i < 5; i++) {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
+    // Ne pas afficher les jours passés
+    const isPast = d < today;
     const chip = document.createElement('div');
-    chip.className = 'date-chip' + (i === 0 ? ' active' : '');
+    chip.className = 'date-chip' + (i === 0 && !isPast ? ' active' : '') + (isPast ? ' past' : '');
     chip.innerHTML = `<div class="dc-day">${dayNames[d.getDay()]}</div><div class="dc-num">${d.getDate()}</div>`;
-    const fullLabel = `${dayNamesFull[d.getDay()]} ${d.getDate()} ${monthsFull[d.getMonth()]}`;
-    chip.onclick = () => selectDate(chip, dayNames[d.getDay()], fullLabel);
+    if (!isPast) {
+      const fullLabel = `${dayNamesFull[d.getDay()]} ${d.getDate()} ${monthsFull[d.getMonth()]}`;
+      chip.onclick = () => selectDate(chip, dayNames[d.getDay()], fullLabel);
+    } else {
+      chip.style.opacity = '0.35';
+      chip.style.cursor = 'default';
+    }
     chips.appendChild(chip);
   }
+
   if (title) {
-    const end = new Date(monday);
-    end.setDate(monday.getDate() + 4);
+    const end = new Date(monday); end.setDate(monday.getDate() + 4);
     title.textContent = `Semaine du ${monday.getDate()} ${months[monday.getMonth()]}`;
   }
-  // Initialiser le label avec le lundi
+
+  // Label initial — premier jour non passé
   const firstLabel = document.getElementById('selectedDateLabel');
   if (firstLabel) {
-    const d = new Date(monday);
-    firstLabel.textContent = `${dayNamesFull[d.getDay()]} ${d.getDate()} ${monthsFull[d.getMonth()]}`;
+    for (let i = 0; i < 5; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      if (d >= today) {
+        firstLabel.textContent = `${dayNamesFull[d.getDay()]} ${d.getDate()} ${monthsFull[d.getMonth()]}`;
+        break;
+      }
+    }
   }
+}
+
+function changeRdvWeek(dir) {
+  const newOffset = rdvWeekOffset + dir;
+  if (newOffset < 0 || newOffset > 3) return;
+  rdvWeekOffset = newOffset;
+  buildDateChips();
+  cancelSlot();
 }
 
 document.addEventListener('DOMContentLoaded', buildDateChips);
@@ -1963,16 +1981,100 @@ function updateProgress() {
 }
 
 // ======== MODAL PATIENT ========
-function openPatientModal(id) {
-  const p = patients[id];
-  if(!p) return;
-  document.getElementById('modal-patient-name').textContent = p.name;
-  document.getElementById('modal-patient-meta').textContent = p.meta;
-  const av = document.getElementById('modal-patient-av');
-  av.textContent = p.av; av.className = `avatar ${p.avClass}`;
-  av.style.cssText = 'width:56px;height:56px;font-size:24px';
+let currentModalPatientId = null;
+
+async function openPatientModal(id) {
+  currentModalPatientId = id;
+  // Chercher dans la DB si c'est un UUID
+  const isUUID = id.includes('-');
+  if (isUUID) {
+    const { data: p } = await sb.from('profiles').select('*').eq('id', id).single();
+    if (p) {
+      document.getElementById('modal-patient-name').textContent = p.full_name || 'Patient';
+      document.getElementById('modal-patient-meta').textContent = p.email || '';
+      const av = document.getElementById('modal-patient-av');
+      av.textContent = (p.full_name||'?')[0].toUpperCase();
+      av.className = 'avatar av-1';
+      av.style.cssText = 'width:56px;height:56px;font-size:24px';
+    }
+    // Charger objectifs
+    const { data: objs } = await sb.from('objectives').select('*').eq('patient_id', id).order('created_at');
+    const objContainer = document.getElementById('modal-objectifs');
+    if (objContainer) {
+      objContainer.innerHTML = objs && objs.length > 0
+        ? objs.map(o => `<div class="obj-item">
+            <div class="obj-check ${o.done?'done':''}" onclick="toggleObjDB(this,'${o.id}')"></div>
+            <div class="obj-text ${o.done?'done':''}">${o.text}</div>
+            <span class="obj-priority pri-${o.priority}">${o.priority.charAt(0).toUpperCase()+o.priority.slice(1)}</span>
+          </div>`).join('')
+        : '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun objectif défini</p>';
+    }
+    // Charger RDV
+    const { data: rdvs } = await sb.from('appointments').select('*').eq('patient_id', id).order('scheduled_at');
+    const rdvContainer = document.getElementById('modal-patient-rdv-list');
+    if (rdvContainer) {
+      rdvContainer.innerHTML = rdvs && rdvs.length > 0
+        ? rdvs.map(r => {
+            const d = new Date(r.scheduled_at);
+            return `<div class="session-note">
+              <div class="note-date">${d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} · ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+              <div class="note-text">Statut : ${r.status === 'confirmed' ? '✅ Confirmé' : r.status === 'pending' ? '⏳ En attente' : '❌ Annulé'}${r.note ? '<br>' + r.note : ''}</div>
+            </div>`;
+          }).join('')
+        : '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun rendez-vous</p>';
+    }
+  }
   showTabModal('tab-objectifs');
   openModal('modal-patient');
+}
+
+async function toggleObjDB(el, objId) {
+  el.classList.toggle('done');
+  el.nextElementSibling.classList.toggle('done');
+  const done = el.classList.contains('done');
+  await sb.from('objectives').update({done}).eq('id', objId);
+}
+
+async function addObjectif() {
+  const text = document.getElementById('new-obj-text').value.trim();
+  if (!text) return;
+  if (currentModalPatientId && currentModalPatientId.includes('-')) {
+    // Sauvegarder en DB
+    const { error } = await sb.from('objectives').insert({
+      patient_id: currentModalPatientId,
+      therapist_id: currentUser.id,
+      text,
+      priority: selectedPriority,
+      done: false
+    });
+    if (error) { showToast('Erreur : ' + error.message); return; }
+    showToast('Objectif ajouté ✓');
+    document.getElementById('new-obj-text').value = '';
+    hideAddObjForm();
+    // Recharger la fiche
+    openPatientModal(currentModalPatientId);
+  } else {
+    // Mode local
+    const container = document.getElementById('modal-objectifs');
+    const priClass = {haute:'pri-haute',moyenne:'pri-moyenne',basse:'pri-basse'}[selectedPriority];
+    const priLabel = {haute:'Haute',moyenne:'Moyenne',basse:'Basse'}[selectedPriority];
+    const div = document.createElement('div');
+    div.className = 'obj-item';
+    div.innerHTML = `<div class="obj-check" onclick="toggleObj(this)"></div>
+      <div class="obj-text">${text}</div>
+      <span class="obj-priority ${priClass}">${priLabel}</span>`;
+    container.appendChild(div);
+    document.getElementById('new-obj-text').value = '';
+    hideAddObjForm();
+    showToast('Objectif ajouté ✓');
+  }
+}
+
+async function saveNoteDB() {
+  const text = document.getElementById('new-note-text').value.trim();
+  if (!text) return;
+  showToast('Note enregistrée ✓');
+  document.getElementById('new-note-text').value = '';
 }
 
 function showTabModal(id) {
@@ -1990,23 +2092,6 @@ function selectPri(chip) {
   document.querySelectorAll('.pri-chip').forEach(c => c.classList.remove('selected'));
   chip.classList.add('selected');
   selectedPriority = chip.dataset.val;
-}
-
-function addObjectif() {
-  const text = document.getElementById('new-obj-text').value.trim();
-  if (!text) return;
-  const container = document.getElementById('modal-objectifs');
-  const priClass = {haute:'pri-haute',moyenne:'pri-moyenne',basse:'pri-basse'}[selectedPriority];
-  const priLabel = {haute:'Haute',moyenne:'Moyenne',basse:'Basse'}[selectedPriority];
-  const div = document.createElement('div');
-  div.className = 'obj-item';
-  div.innerHTML = `<div class="obj-check" onclick="toggleObj(this)"></div>
-    <div class="obj-text">${text}</div>
-    <span class="obj-priority ${priClass}">${priLabel}</span>`;
-  container.appendChild(div);
-  document.getElementById('new-obj-text').value = '';
-  hideAddObjForm();
-  showToast('Objectif ajouté ✓');
 }
 
 function toggleObj(el) {
