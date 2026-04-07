@@ -1009,11 +1009,13 @@ select.input-line {
           <div class="sound-grid">
             <button class="sound-btn" onclick="toggleSound(this,'pluie')"><span class="snd-icon">🌧️</span>Pluie douce</button>
             <button class="sound-btn" onclick="toggleSound(this,'foret')"><span class="snd-icon">🌲</span>Forêt</button>
-            <button class="sound-btn" onclick="toggleSound(this,'ocean')"><span class="snd-icon">🌊</span>Océan</button>
+            <button class="sound-btn" onclick="toggleSound(this,'ocean')"><span class="snd-icon">🌊</span>Mer</button>
             <button class="sound-btn" onclick="toggleSound(this,'bol')"><span class="snd-icon">🎵</span>Bols tibétains</button>
             <button class="sound-btn" onclick="toggleSound(this,'vent')"><span class="snd-icon">💨</span>Vent léger</button>
             <button class="sound-btn" onclick="toggleSound(this,'feu')"><span class="snd-icon">🔥</span>Feu crépitant</button>
+            <button class="sound-btn" onclick="toggleSound(this,'orage')"><span class="snd-icon">⛈️</span>Orage</button>
           </div>
+          <p style="font-size:11px;color:var(--texte-moyen);text-align:center;margin-top:8px">Choisissez un son avant de démarrer — il s'arrêtera avec le chronomètre</p>
           <div class="wave-viz" id="waveViz">
             <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
             <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
@@ -2283,15 +2285,21 @@ function makeMedTimer(tdId, tlId, tcId, tbId) {
         clearInterval(interval); running=false;
         document.getElementById(tbId).innerHTML='▶ Reprendre';
         document.getElementById(tlId).textContent='En pause';
+        stopSound();
       } else {
         if(remaining<=0) this.reset();
         running=true;
         document.getElementById(tbId).innerHTML='⏸ Pause';
         document.getElementById(tlId).textContent='En cours…';
-        interval=setInterval(()=>{ remaining--; this.update();
-          if(remaining<=0){clearInterval(interval);running=false;
+        startSound();
+        interval=setInterval(()=>{
+          remaining--; this.update();
+          if(remaining<=0){
+            clearInterval(interval); running=false;
             document.getElementById(tlId).textContent='Terminé ✓';
-            document.getElementById(tbId).innerHTML='✓ Terminé';}
+            document.getElementById(tbId).innerHTML='✓ Terminé';
+            stopSound();
+          }
         },1000);
       }
     },
@@ -2299,6 +2307,7 @@ function makeMedTimer(tdId, tlId, tcId, tbId) {
       clearInterval(interval); running=false; remaining=total; this.update();
       document.getElementById(tbId).innerHTML='▶ Démarrer';
       document.getElementById(tlId).textContent='En attente';
+      stopSound();
     }
   };
 }
@@ -2323,38 +2332,51 @@ let currentSound = null;
 let currentAudio = null;
 
 const soundUrls = {
-  pluie: 'https://assets.mixkit.co/active_storage/sfx/2515/2515-preview.mp3',
-  foret: 'https://assets.mixkit.co/active_storage/sfx/2517/2517-preview.mp3',
-  ocean: 'https://assets.mixkit.co/active_storage/sfx/2518/2518-preview.mp3',
-  bol: 'https://assets.mixkit.co/active_storage/sfx/2516/2516-preview.mp3',
-  vent: 'https://assets.mixkit.co/active_storage/sfx/2514/2514-preview.mp3',
-  feu: 'https://assets.mixkit.co/active_storage/sfx/2513/2513-preview.mp3'
+  pluie: '/pluie.wav',
+  foret: '/foret.wav',
+  ocean: '/mer.mp3',
+  bol: '/bol.mp3',
+  vent: '/vent.wav',
+  feu: '/feu.mp3',
+  orage: '/orage.mp3'
 };
 
 function toggleSound(btn, sound) {
   const bars = document.querySelectorAll('.wave-bar');
   if (currentSound === sound) {
+    // Désélectionner
     btn.classList.remove('playing');
     bars.forEach(b => b.classList.remove('active'));
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     currentSound = null;
+    showToast('Son désélectionné');
   } else {
+    // Sélectionner (sans démarrer — le timer démarrera le son)
     document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('playing'));
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
     btn.classList.add('playing');
     bars.forEach(b => b.classList.add('active'));
     currentSound = sound;
-    try {
-      currentAudio = new Audio(soundUrls[sound]);
-      currentAudio.loop = true;
-      currentAudio.volume = 0.6;
-      const playPromise = currentAudio.play();
-      if (playPromise) {
-        playPromise.catch(() => {
-          showToast('Appuyez d\'abord sur l\'écran pour activer le son');
-        });
-      }
-    } catch(e) { showToast('Son non disponible'); }
+    showToast('Son sélectionné — démarrez le chronomètre 🎵');
+  }
+}
+
+function startSound() {
+  if (!currentSound) return;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  try {
+    currentAudio = new Audio(soundUrls[currentSound]);
+    currentAudio.loop = true;
+    currentAudio.volume = 0.6;
+    currentAudio.play().catch(e => console.log('Audio error:', e));
+  } catch(e) {}
+}
+
+function stopSound() {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
   }
 }
 
