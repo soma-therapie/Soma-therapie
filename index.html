@@ -681,11 +681,24 @@ select.input-line {
 
   <div class="login-card">
     <div class="login-tabs">
-      <button class="login-tab active" onclick="switchLoginTab('therapist',this)">Thérapeute</button>
-      <button class="login-tab" onclick="switchLoginTab('patient',this)">Patient·e</button>
+      <button class="login-tab active" onclick="switchLoginTab('patient',this)">Patient·e</button>
+      <button class="login-tab" onclick="switchLoginTab('therapist',this)">Thérapeute</button>
     </div>
 
-    <div id="login-form-therapist">
+    <div id="login-form-patient">
+      <div class="form-group">
+        <label class="form-label">Adresse e-mail</label>
+        <input type="email" class="form-input" placeholder="votre@email.com" id="pt-email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mot de passe</label>
+        <input type="password" class="form-input" placeholder="••••••••" id="pt-pass">
+      </div>
+      <button class="btn-full" onclick="loginAs('patient')">Accéder à mon espace</button>
+      <p class="login-hint">Connectez-vous avec vos identifiants</p>
+    </div>
+
+    <div id="login-form-therapist" style="display:none">
       <div class="form-group">
         <label class="form-label">Adresse e-mail</label>
         <input type="email" class="form-input" placeholder="votre@email.com" id="th-email">
@@ -698,17 +711,18 @@ select.input-line {
       <p class="login-hint">Entrez vos identifiants Supabase</p>
     </div>
 
-    <div id="login-form-patient" style="display:none">
+    <!-- Formulaire de définition du mot de passe (après invitation) -->
+    <div id="login-form-newpassword" style="display:none">
+      <p style="font-size:14px;color:var(--texte-moyen);margin-bottom:16px;text-align:center">Bienvenue ! Choisissez votre mot de passe pour accéder à votre espace.</p>
       <div class="form-group">
-        <label class="form-label">Adresse e-mail</label>
-        <input type="email" class="form-input" placeholder="votre@email.com" id="pt-email">
+        <label class="form-label">Nouveau mot de passe</label>
+        <input type="password" class="form-input" placeholder="••••••••" id="new-pass">
       </div>
       <div class="form-group">
-        <label class="form-label">Mot de passe</label>
-        <input type="password" class="form-input" placeholder="••••••••" id="pt-pass">
+        <label class="form-label">Confirmer le mot de passe</label>
+        <input type="password" class="form-input" placeholder="••••••••" id="new-pass-confirm">
       </div>
-      <button class="btn-full" onclick="loginAs('patient')">Accéder à mon espace</button>
-      <p class="login-hint">Connectez-vous avec vos identifiants</p>
+      <button class="btn-full" onclick="setNewPassword()">Créer mon compte</button>
     </div>
   </div>
 </div>
@@ -1361,6 +1375,65 @@ function switchLoginTab(role, btn) {
   btn.classList.add('active');
   document.getElementById('login-form-therapist').style.display = role==='therapist' ? 'block' : 'none';
   document.getElementById('login-form-patient').style.display = role==='patient' ? 'block' : 'none';
+  document.getElementById('login-form-newpassword').style.display = 'none';
+}
+
+// Détecter si c'est une invitation (token dans l'URL)
+async function checkInviteToken() {
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const accessToken = params.get('access_token');
+  const type = params.get('type');
+
+  if (accessToken && (type === 'invite' || type === 'recovery' || type === 'signup')) {
+    // Connecter l'utilisateur avec le token
+    const { data, error } = await sb.auth.setSession({
+      access_token: accessToken,
+      refresh_token: params.get('refresh_token') || ''
+    });
+    if (!error && data.user) {
+      currentUser = data.user;
+      // Afficher le formulaire de nouveau mot de passe
+      document.querySelectorAll('.login-tabs, #login-form-patient, #login-form-therapist').forEach(el => el.style.display = 'none');
+      document.getElementById('login-form-newpassword').style.display = 'block';
+      // Pré-remplir l'email si disponible
+      const nameEl = document.querySelector('#login-form-newpassword p');
+      if (nameEl && data.user.email) {
+        nameEl.textContent = `Bienvenue ! Choisissez votre mot de passe pour accéder à votre espace (${data.user.email}).`;
+      }
+      // Nettoyer l'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }
+}
+
+async function setNewPassword() {
+  const pass = document.getElementById('new-pass').value;
+  const confirm = document.getElementById('new-pass-confirm').value;
+  if (!pass || pass.length < 6) { showToast('Le mot de passe doit faire au moins 6 caractères'); return; }
+  if (pass !== confirm) { showToast('Les mots de passe ne correspondent pas'); return; }
+
+  const { error } = await sb.auth.updateUser({ password: pass });
+  if (error) { showToast('Erreur : ' + error.message); return; }
+
+  // Créer/mettre à jour le profil
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (!profile) {
+    await sb.from('profiles').insert({
+      id: currentUser.id,
+      role: 'patient',
+      full_name: currentUser.user_metadata?.full_name || '',
+      email: currentUser.email
+    });
+  }
+
+  showToast('Compte créé avec succès ! 🌿');
+  // Recharger le profil et connecter
+  const { data: newProfile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  currentProfile = newProfile;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-patient').classList.add('active');
+  loadPatientData();
 }
 
 async function loginAs(role) {
@@ -1707,7 +1780,12 @@ async function confirmRdvDB() {
   cancelSlot();
 }
 
-document.addEventListener('DOMContentLoaded', checkSession);
+document.addEventListener('DOMContentLoaded', () => {
+  checkSession();
+  checkInviteToken();
+  buildDateChips();
+  buildWeekGrid();
+});
 
 async function loadPatientsList() {
   const { data: list } = await sb.from('profiles').select('*').eq('role','patient');
@@ -1941,7 +2019,7 @@ function changeWeek(dir) {
   buildWeekGrid();
 }
 
-document.addEventListener("DOMContentLoaded", () => buildWeekGrid());
+// buildWeekGrid called in main DOMContentLoaded
 
 // ======== DATES DYNAMIQUES RDV ========
 let rdvWeekOffset = 0;
@@ -2018,7 +2096,7 @@ function changeRdvWeek(dir) {
   cancelSlot();
 }
 
-document.addEventListener('DOMContentLoaded', buildDateChips);
+// buildDateChips called in main DOMContentLoaded
 
 // ======== PATIENT — RDV ========
 function selectDate(chip, day, fullLabel) {
