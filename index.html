@@ -34,7 +34,7 @@ let currentProfile = null;
   --bleu-doux: #4a6e8a;
 }
 
-* { margin:0; padding:0; box-sizing:border-box; }
+* { margin:0; padding:0; box-sizing:border-box; max-width:100%; }
 
 body {
   font-family: 'Jost', sans-serif;
@@ -42,6 +42,7 @@ body {
   color: var(--texte-sombre);
   min-height: 100vh;
   overflow-x: hidden;
+  width: 100%;
 }
 
 /* ————— ÉCRANS ————— */
@@ -232,6 +233,7 @@ nav {
   margin-bottom:14px; border:1px solid rgba(200,180,154,0.35);
   box-shadow:0 2px 16px rgba(42,64,48,0.06);
   transition:transform 0.2s, box-shadow 0.2s;
+  width:100%; overflow:hidden;
 }
 .card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(42,64,48,0.1); }
 
@@ -282,6 +284,7 @@ nav {
 .section-head {
   display:flex; align-items:center; justify-content:space-between;
   margin-bottom:14px; margin-top:6px;
+  width:100%; overflow:hidden;
 }
 .section-title {
   font-family:'Cormorant Garamond',serif;
@@ -344,8 +347,9 @@ nav {
 
 /* Objectif item */
 .obj-item {
-  display:flex; align-items:flex-start; gap:12px;
+  display:flex; align-items:flex-start; gap:10px;
   padding:13px 0; border-bottom:1px solid rgba(200,180,154,0.2);
+  width:100%; overflow:hidden;
 }
 .obj-item:last-child { border-bottom:none; }
 
