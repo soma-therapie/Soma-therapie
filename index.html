@@ -2860,13 +2860,15 @@ async function createPatientAccount() {
   if (error) { showToast('Erreur : ' + error.message); return; }
 
   if (data.user) {
-    // Créer le profil
-    await sb.from('profiles').upsert({
+    // Attendre un peu puis créer le profil
+    await new Promise(r => setTimeout(r, 500));
+    const { error: profileError } = await sb.from('profiles').upsert({
       id: data.user.id,
       role: 'patient',
       full_name: name,
       email: email
-    });
+    }, { onConflict: 'id' });
+    if (profileError) console.log('Profile error:', profileError);
   }
 
   // Afficher les identifiants
