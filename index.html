@@ -686,7 +686,7 @@ select.input-line {
 
   <div class="login-card">
     <div class="login-tabs">
-      <button class="login-tab active" onclick="switchLoginTab('patient',this)">Patient·e</button>
+      <button class="login-tab active" onclick="switchLoginTab('patient',this)">Consultant·e</button>
       <button class="login-tab" onclick="switchLoginTab('therapist',this)">Thérapeute</button>
     </div>
 
@@ -783,11 +783,11 @@ select.input-line {
       </div>
 
       <div class="section-head" style="margin-top:8px">
-        <h2 class="section-title">Mes patients</h2>
+        <h2 class="section-title">Mes consultant·e·s</h2>
         <button class="btn-sm blue" onclick="openModal('modal-add-patient')">+ Ajouter</button>
       </div>
       <div class="card" id="patients-list-container">
-        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun·e consultant·e pour le moment</p>
       </div>
     </div>
   </div>
@@ -878,11 +878,11 @@ select.input-line {
     </div>
     <div class="content">
       <div class="section-head">
-        <h2 class="section-title">Liste des patients</h2>
+        <h2 class="section-title">Liste des consultant·e·s</h2>
         <button class="btn-sm blue" onclick="openModal('modal-add-patient')">+ Ajouter</button>
       </div>
       <div class="card" id="t-patients-list">
-        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>
+        <p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun·e consultant·e pour le moment</p>
       </div>
     </div>
   </div>
@@ -895,7 +895,7 @@ select.input-line {
 <div class="screen" id="screen-patient">
   <div class="app-screen active" id="p-accueil">
     <div class="app-header" style="background:linear-gradient(160deg,#3a5a48,#5a8a6a)">
-      <p class="header-role">Espace patient</p>
+      <p class="header-role">Espace consultant·e</p>
       <h1 class="header-name">Bonjour,<br><em id="patient-first-name">—</em></h1>
       <p class="header-sub" id="patient-date"></p>
       <div class="header-actions">
@@ -937,7 +937,7 @@ select.input-line {
   <div class="app-screen" id="p-rdv">
     <div class="app-header has-back" style="background:linear-gradient(160deg,#3a5565,#5a8098)">
       <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
-      <p class="header-role">Espace patient</p>
+      <p class="header-role">Espace consultant·e</p>
       <h1 class="header-name">Prendre<br><em>Rendez-vous</em></h1>
       <p class="header-sub">Choisissez un créneau disponible</p>
     </div>
@@ -981,7 +981,7 @@ select.input-line {
   <div class="app-screen" id="p-meditation">
     <div class="app-header has-back" style="background:linear-gradient(160deg,#2a4030,#4a7255)">
       <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
-      <p class="header-role">Espace patient</p>
+      <p class="header-role">Espace consultant·e</p>
       <h1 class="header-name">Méditation<br><em>& Pendulation</em></h1>
       <p class="header-sub">Exercices guidés pour revenir à soi</p>
     </div>
@@ -1061,13 +1061,22 @@ select.input-line {
           </ul>
         </div>
         <div class="card" style="text-align:center">
-          <div id="coherence-visual" style="width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--vert-moyen) 0%, var(--beige-moyen) 0%);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 4px 20px rgba(42,64,48,0.14);transition:all 0.5s ease;">
-            <div style="width:96px;height:96px;border-radius:50%;background:var(--blanc-creme);display:flex;flex-direction:column;align-items:center;justify-content:center;">
-              <div id="coherence-phase" style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--vert-fonce)">Prêt</div>
-              <div id="coherence-count" style="font-size:36px;font-weight:300;color:var(--vert-moyen)">—</div>
+          <!-- Cercle progression 5 minutes -->
+          <div style="position:relative;width:160px;height:160px;margin:0 auto 16px">
+            <svg style="position:absolute;top:0;left:0;transform:rotate(-90deg)" width="160" height="160">
+              <circle cx="80" cy="80" r="70" fill="none" stroke="var(--beige-moyen)" stroke-width="6"/>
+              <circle id="coherence-progress-ring" cx="80" cy="80" r="70" fill="none" stroke="var(--vert-clair)" stroke-width="6"
+                stroke-dasharray="439.8" stroke-dashoffset="439.8" style="transition:stroke-dashoffset 0.5s ease"/>
+            </svg>
+            <div id="coherence-visual" style="position:absolute;top:10px;left:10px;width:140px;height:140px;border-radius:50%;background:conic-gradient(var(--vert-moyen) 0%, var(--beige-moyen) 0%);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(42,64,48,0.14);transition:background 0.3s ease;">
+              <div style="width:112px;height:112px;border-radius:50%;background:var(--blanc-creme);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div id="coherence-phase" style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce)">Prêt</div>
+                <div id="coherence-count" style="font-size:32px;font-weight:300;color:var(--vert-moyen)">—</div>
+                <div id="coherence-total" style="font-size:10px;color:var(--texte-moyen);letter-spacing:0.1em">5:00</div>
+              </div>
             </div>
           </div>
-          <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:16px">6 respirations/min · 5 secondes inspiration · 5 secondes expiration</p>
+          <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:16px">6 respirations/min · 5 sec inspiration · 5 sec expiration</p>
           <button class="btn-primary" id="coherence-btn" onclick="startCoherence()">Commencer</button>
         </div>
         <div class="card">
@@ -1179,7 +1188,7 @@ select.input-line {
   <div class="app-screen" id="p-journal">
     <div class="app-header has-back" style="background:linear-gradient(160deg,#5a4838,#8a7060)">
       <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
-      <p class="header-role">Espace patient</p>
+      <p class="header-role">Espace consultant·e</p>
       <h1 class="header-name">Journal<br><em>de bord</em></h1>
       <p class="header-sub">Vos ressentis, vos observations</p>
     </div>
@@ -1213,7 +1222,7 @@ select.input-line {
   <div class="app-screen" id="p-ressources">
     <div class="app-header has-back" style="background:linear-gradient(160deg,#3a5a55,#5a8a7a)">
       <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
-      <p class="header-role">Espace patient</p>
+      <p class="header-role">Espace consultant·e</p>
       <h1 class="header-name">Mes<br><em>Ressources</em></h1>
       <p class="header-sub">Internes & externes — votre ancre</p>
     </div>
@@ -1384,8 +1393,8 @@ select.input-line {
 <div class="modal-overlay" id="modal-add-patient">
   <div class="modal-box">
     <div class="modal-handle"></div>
-    <div class="modal-title">Nouveau patient</div>
-    <div class="modal-sub">Un email d'invitation sera envoyé au patient</div>
+    <div class="modal-title">Nouveau·elle consultant·e</div>
+    <div class="modal-sub">Un email d'invitation sera envoyé au/à la consultant·e</div>
     <input class="input-line" placeholder="Prénom et nom" id="new-patient-name">
     <input class="input-line" type="email" placeholder="Adresse e-mail" id="new-patient-email">
     <div style="display:flex;gap:10px">
@@ -1400,7 +1409,7 @@ select.input-line {
 const patients = {
   marie: { name:'Marie Dupont', av:'M', avClass:'av-1', meta:'8 séances · depuis jan. 2026' },
   amelie: { name:'Amélie Roux', av:'A', avClass:'av-2', meta:'5 séances · depuis fév. 2026' },
-  lucas: { name:'Lucas Bernard', av:'L', avClass:'av-3', meta:'1 séance · Nouveau patient' },
+  lucas: { name:'Lucas Bernard', av:'L', avClass:'av-3', meta:'1 séance · Nouveau·elle consultant·e' },
   thomas: { name:'Thomas Petit', av:'T', avClass:'av-4', meta:'12 séances · depuis oct. 2025' }
 };
 
@@ -1647,7 +1656,7 @@ function renderPatientList(list) {
   const colors = ['av-1','av-2','av-3','av-4'];
   const containers = ['patients-list-container', 't-patients-list'];
   const html = list.length === 0
-    ? '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>'
+    ? '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun·e consultant·e pour le moment</p>'
     : list.map((p,i) => `<div class="patient-item" onclick="openPatientModal('${p.id}')">
       <div class="avatar ${colors[i%4]}">${(p.full_name||'?')[0].toUpperCase()}</div>
       <div class="patient-info">
@@ -1829,7 +1838,7 @@ async function loadPatientsList() {
   const container = document.getElementById('t-patients-list');
   if (!container) return;
   if (!list || list.length === 0) {
-    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun patient pour le moment</p>';
+    container.innerHTML = '<p style="color:var(--texte-moyen);font-size:14px;text-align:center;padding:20px 0">Aucun·e consultant·e pour le moment</p>';
     return;
   }
   const colors = ['av-1','av-2','av-3','av-4'];
@@ -2392,17 +2401,16 @@ let coherenceInterval = null;
 let coherenceRunning = false;
 let coherencePhaseTime = 0;
 let coherenceIsInhale = true;
-let coherenceCycles = 0;
+let coherenceTotalTime = 0;
+const COHERENCE_DURATION = 300; // 5 minutes en secondes
+const CIRCUMFERENCE = 2 * Math.PI * 70; // 439.8
 
 function startCoherence() {
-  if (coherenceRunning) {
-    stopCoherence();
-    return;
-  }
+  if (coherenceRunning) { stopCoherence(); return; }
   coherenceRunning = true;
   coherencePhaseTime = 0;
   coherenceIsInhale = true;
-  coherenceCycles = 0;
+  coherenceTotalTime = 0;
   document.getElementById('coherence-btn').textContent = 'Arrêter';
   startSound();
   coherenceInterval = setInterval(updateCoherence, 100);
@@ -2413,23 +2421,32 @@ function stopCoherence() {
   coherenceRunning = false;
   const phase = document.getElementById('coherence-phase');
   const count = document.getElementById('coherence-count');
+  const total = document.getElementById('coherence-total');
   const visual = document.getElementById('coherence-visual');
+  const ring = document.getElementById('coherence-progress-ring');
   const btn = document.getElementById('coherence-btn');
   if (phase) phase.textContent = 'Prêt';
   if (count) count.textContent = '—';
+  if (total) total.textContent = '5:00';
   if (visual) visual.style.background = 'conic-gradient(var(--vert-moyen) 0%, var(--beige-moyen) 0%)';
+  if (ring) ring.style.strokeDashoffset = CIRCUMFERENCE;
   if (btn) btn.textContent = 'Commencer';
   stopSound();
 }
 
 function updateCoherence() {
   coherencePhaseTime += 0.1;
-  const duration = 5; // 5 secondes par phase
+  coherenceTotalTime += 0.1;
+  const duration = 5;
   const progress = coherencePhaseTime / duration;
   const remaining = Math.ceil(duration - coherencePhaseTime);
+
+  // Cercle intérieur (inspiration/expiration)
+  const visual = document.getElementById('coherence-visual');
   const phase = document.getElementById('coherence-phase');
   const count = document.getElementById('coherence-count');
-  const visual = document.getElementById('coherence-visual');
+  const total = document.getElementById('coherence-total');
+  const ring = document.getElementById('coherence-progress-ring');
 
   if (coherenceIsInhale) {
     if (phase) phase.textContent = 'Inspirez';
@@ -2443,14 +2460,27 @@ function updateCoherence() {
     if (visual) visual.style.background = `conic-gradient(var(--vert-moyen) ${pct}%, var(--beige-moyen) 0%)`;
   }
 
+  // Cercle extérieur (5 minutes)
+  const totalProgress = coherenceTotalTime / COHERENCE_DURATION;
+  const offset = CIRCUMFERENCE * (1 - totalProgress);
+  if (ring) ring.style.strokeDashoffset = Math.max(offset, 0);
+
+  // Afficher le temps restant total
+  const timeLeft = Math.max(COHERENCE_DURATION - coherenceTotalTime, 0);
+  const mins = Math.floor(timeLeft / 60);
+  const secs = Math.floor(timeLeft % 60);
+  if (total) total.textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+
+  // Changer de phase
   if (coherencePhaseTime >= duration) {
     coherencePhaseTime = 0;
     coherenceIsInhale = !coherenceIsInhale;
-    if (coherenceIsInhale) coherenceCycles++;
-    if (coherenceCycles >= 18) { // 3 minutes = 18 cycles
-      stopCoherence();
-      showToast('Séance terminée ✓ Bravo ! 💚');
-    }
+  }
+
+  // Fin de session
+  if (coherenceTotalTime >= COHERENCE_DURATION) {
+    stopCoherence();
+    showToast('Séance de 5 min terminée ✓ Bravo ! 💚');
   }
 }
 
