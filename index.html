@@ -992,6 +992,7 @@ select.input-line {
         <button class="tab-btn" onclick="selectMedTab(this,'mt-respiration')">Respiration 4-7-8</button>
         <button class="tab-btn" onclick="selectMedTab(this,'mt-scan')">Scan corporel</button>
         <button class="tab-btn" onclick="selectMedTab(this,'mt-pendulation')">Pendulation</button>
+        <button class="tab-btn" onclick="selectMedTab(this,'mt-regulation')">Régulation émotionnelle</button>
       </div>
 
       <!-- Ancrage -->
@@ -1181,10 +1182,91 @@ select.input-line {
           </div>
         </div>
       </div>
+      <!-- Régulation émotionnelle -->
+      <div id="mt-regulation" style="display:none">
+
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(192,82,74,0.1);color:var(--rouge-doux);padding:6px 14px;border-radius:50px;font-size:12px;margin-bottom:14px">🆘 Techniques de régulation immédiate</div>
+
+        <!-- Grounding 5-4-3-2-1 -->
+        <div class="exercise-guide" style="border-left-color:var(--rouge-doux)">
+          <h3>👁️ Grounding 5-4-3-2-1</h3>
+          <ul class="step-list">
+            <li data-step="1">Nommez <strong>5 choses</strong> que vous <strong>voyez</strong> autour de vous.</li>
+            <li data-step="2">Nommez <strong>4 choses</strong> que vous pouvez <strong>toucher</strong> — sentez leur texture.</li>
+            <li data-step="3">Nommez <strong>3 choses</strong> que vous <strong>entendez</strong> en ce moment.</li>
+            <li data-step="4">Nommez <strong>2 choses</strong> que vous <strong>sentez</strong> (odorat).</li>
+            <li data-step="5">Nommez <strong>1 chose</strong> que vous pouvez <strong>goûter</strong>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="dur-btn active" onclick="setMedDur(this,'t-reg',3*60)">3 min</button>
+            <button class="dur-btn" onclick="setMedDur(this,'t-reg',5*60)">5 min</button>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-circle" id="tc-reg" style="--progress:0%">
+              <div class="timer-inner">
+                <div class="timer-display" id="td-reg">03:00</div>
+                <div class="timer-label" id="tl-reg">En attente</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <button class="btn-secondary" onclick="medTimers['reg'].reset()">Réinitialiser</button>
+              <button class="btn-primary" id="tb-reg" onclick="medTimers['reg'].toggle()">▶ Démarrer</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contraction / Relâchement -->
+        <div class="exercise-guide" style="border-left-color:#c0524a;margin-top:6px">
+          <h3>
+            <span style="display:inline-flex;align-items:center;gap:8px">
+              💪 Contraction & Relâchement
+              <span style="background:var(--rouge-doux);color:white;font-size:10px;font-weight:600;padding:3px 10px;border-radius:50px;letter-spacing:0.08em;font-family:'Jost',sans-serif">🆘 URGENCE</span>
+            </span>
+          </h3>
+          <ul class="step-list">
+            <li data-step="1">Prenez une <strong>grande inspiration</strong> profonde.</li>
+            <li data-step="2">Contractez <strong>tous les muscles</strong> de votre corps en même temps pendant <strong>10 secondes</strong>.</li>
+            <li data-step="3"><strong>Relâchez</strong> toute la tension en expirant profondément.</li>
+            <li data-step="4">Sentez la différence entre tension et relâchement.</li>
+            <li data-step="5">Renouvelez pendant au moins <strong>3 minutes</strong>.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="dur-btn active" onclick="setMedDur(this,'t-contraction',3*60)">3 min</button>
+            <button class="dur-btn" onclick="setMedDur(this,'t-contraction',5*60)">5 min</button>
+          </div>
+          <div class="timer-wrap">
+            <div class="timer-circle" id="tc-contraction" style="--progress:0%">
+              <div class="timer-inner">
+                <div class="timer-display" id="td-contraction">03:00</div>
+                <div class="timer-label" id="tl-contraction">En attente</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <button class="btn-secondary" onclick="medTimers['contraction'].reset()">Réinitialiser</button>
+              <button class="btn-primary" id="tb-contraction" onclick="medTimers['contraction'].toggle()">▶ Démarrer</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <p class="card-title">Ambiance sonore</p>
+          <div class="sound-grid">
+            <button class="sound-btn" onclick="toggleSound(this,'pluie')"><span class="snd-icon">🌧️</span>Pluie douce</button>
+            <button class="sound-btn" onclick="toggleSound(this,'foret')"><span class="snd-icon">🌲</span>Forêt</button>
+            <button class="sound-btn" onclick="toggleSound(this,'ocean')"><span class="snd-icon">🌊</span>Mer</button>
+            <button class="sound-btn" onclick="toggleSound(this,'bol')"><span class="snd-icon">🎵</span>Bols tibétains</button>
+            <button class="sound-btn" onclick="toggleSound(this,'vent')"><span class="snd-icon">💨</span>Vent léger</button>
+            <button class="sound-btn" onclick="toggleSound(this,'feu')"><span class="snd-icon">🔥</span>Feu crépitant</button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
-
-  <!-- PAGE JOURNAL -->
   <div class="app-screen" id="p-journal">
     <div class="app-header has-back" style="background:linear-gradient(160deg,#5a4838,#8a7060)">
       <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
@@ -2406,7 +2488,7 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 function selectMedTab(btn, tabId) {
   document.querySelectorAll('#med-tabs .tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  ['mt-ancrage','mt-coherence','mt-respiration','mt-scan','mt-pendulation'].forEach(id => {
+  ['mt-ancrage','mt-coherence','mt-respiration','mt-scan','mt-pendulation','mt-regulation'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.style.display = id===tabId ? 'block' : 'none';
   });
@@ -2546,7 +2628,9 @@ function makeMedTimer(tdId, tlId, tcId, tbId) {
 const medTimers = {
   ancrage: makeMedTimer('td-ancrage','tl-ancrage','tc-ancrage','tb-ancrage'),
   pend: makeMedTimer('td-pend','tl-pend','tc-pend','tb-pend'),
-  scan: makeMedTimer('td-scan','tl-scan','tc-scan','tb-scan')
+  scan: makeMedTimer('td-scan','tl-scan','tc-scan','tb-scan'),
+  reg: makeMedTimer('td-reg','tl-reg','tc-reg','tb-reg'),
+  contraction: makeMedTimer('td-contraction','tl-contraction','tc-contraction','tb-contraction')
 };
 medTimers.pend.setDuration(5*60);
 medTimers.scan.setDuration(10*60);
@@ -2554,7 +2638,7 @@ medTimers.scan.setDuration(10*60);
 function setMedDur(btn, key, secs) {
   btn.parentElement.querySelectorAll('.dur-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  const map = {'t-ancrage':'ancrage','t-pend':'pend','t-scan':'scan'};
+  const map = {'t-ancrage':'ancrage','t-pend':'pend','t-scan':'scan','t-reg':'reg','t-contraction':'contraction'};
   if(medTimers[map[key]]) medTimers[map[key]].setDuration(secs);
 }
 
