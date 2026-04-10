@@ -988,7 +988,8 @@ select.input-line {
     <div class="content">
       <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;padding-right:16px;scrollbar-width:none;margin-bottom:18px;-webkit-overflow-scrolling:touch;" id="med-tabs">
         <button class="tab-btn active" onclick="selectMedTab(this,'mt-ancrage')">Ancrage</button>
-        <button class="tab-btn" onclick="selectMedTab(this,'mt-respiration')">Respiration</button>
+        <button class="tab-btn" onclick="selectMedTab(this,'mt-coherence')">Cohérence cardiaque</button>
+        <button class="tab-btn" onclick="selectMedTab(this,'mt-respiration')">Respiration 4-7-8</button>
         <button class="tab-btn" onclick="selectMedTab(this,'mt-scan')">Scan corporel</button>
         <button class="tab-btn" onclick="selectMedTab(this,'mt-pendulation')">Pendulation</button>
       </div>
@@ -1043,6 +1044,42 @@ select.input-line {
             <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
             <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
             <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cohérence cardiaque -->
+      <div id="mt-coherence" style="display:none">
+        <div class="exercise-guide">
+          <h3>💚 Cohérence cardiaque 365</h3>
+          <ul class="step-list">
+            <li data-step="1">Installez-vous confortablement, dos droit, pieds à plat.</li>
+            <li data-step="2">Inspirez lentement par le nez pendant <strong>5 secondes</strong>.</li>
+            <li data-step="3">Expirez lentement par la bouche pendant <strong>5 secondes</strong>.</li>
+            <li data-step="4">Maintenez ce rythme régulier sans forcer — 6 respirations par minute.</li>
+            <li data-step="5">Pratiquez <strong>5 minutes</strong>, 3 fois par jour pour un effet optimal.</li>
+          </ul>
+        </div>
+        <div class="card" style="text-align:center">
+          <div id="coherence-visual" style="width:120px;height:120px;border-radius:50%;background:conic-gradient(var(--vert-moyen) 0%, var(--beige-moyen) 0%);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;box-shadow:0 4px 20px rgba(42,64,48,0.14);transition:all 0.5s ease;">
+            <div style="width:96px;height:96px;border-radius:50%;background:var(--blanc-creme);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <div id="coherence-phase" style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--vert-fonce)">Prêt</div>
+              <div id="coherence-count" style="font-size:36px;font-weight:300;color:var(--vert-moyen)">—</div>
+            </div>
+          </div>
+          <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:16px">6 respirations/min · 5 secondes inspiration · 5 secondes expiration</p>
+          <button class="btn-primary" id="coherence-btn" onclick="startCoherence()">Commencer</button>
+        </div>
+        <div class="card">
+          <p class="card-title">Ambiance sonore</p>
+          <p class="card-sub">Sons libres de droits</p>
+          <div class="sound-grid">
+            <button class="sound-btn" onclick="toggleSound(this,'pluie')"><span class="snd-icon">🌧️</span>Pluie douce</button>
+            <button class="sound-btn" onclick="toggleSound(this,'foret')"><span class="snd-icon">🌲</span>Forêt</button>
+            <button class="sound-btn" onclick="toggleSound(this,'ocean')"><span class="snd-icon">🌊</span>Mer</button>
+            <button class="sound-btn" onclick="toggleSound(this,'bol')"><span class="snd-icon">🎵</span>Bols tibétains</button>
+            <button class="sound-btn" onclick="toggleSound(this,'vent')"><span class="snd-icon">💨</span>Vent léger</button>
+            <button class="sound-btn" onclick="toggleSound(this,'feu')"><span class="snd-icon">🔥</span>Feu crépitant</button>
           </div>
         </div>
       </div>
@@ -2343,10 +2380,78 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 function selectMedTab(btn, tabId) {
   document.querySelectorAll('#med-tabs .tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  ['mt-ancrage','mt-respiration','mt-scan','mt-pendulation'].forEach(id => {
+  ['mt-ancrage','mt-coherence','mt-respiration','mt-scan','mt-pendulation'].forEach(id => {
     const el = document.getElementById(id);
     if(el) el.style.display = id===tabId ? 'block' : 'none';
   });
+  if (tabId !== 'mt-coherence') stopCoherence();
+}
+
+// ======== COHÉRENCE CARDIAQUE ========
+let coherenceInterval = null;
+let coherenceRunning = false;
+let coherencePhaseTime = 0;
+let coherenceIsInhale = true;
+let coherenceCycles = 0;
+
+function startCoherence() {
+  if (coherenceRunning) {
+    stopCoherence();
+    return;
+  }
+  coherenceRunning = true;
+  coherencePhaseTime = 0;
+  coherenceIsInhale = true;
+  coherenceCycles = 0;
+  document.getElementById('coherence-btn').textContent = 'Arrêter';
+  startSound();
+  coherenceInterval = setInterval(updateCoherence, 100);
+}
+
+function stopCoherence() {
+  if (coherenceInterval) { clearInterval(coherenceInterval); coherenceInterval = null; }
+  coherenceRunning = false;
+  const phase = document.getElementById('coherence-phase');
+  const count = document.getElementById('coherence-count');
+  const visual = document.getElementById('coherence-visual');
+  const btn = document.getElementById('coherence-btn');
+  if (phase) phase.textContent = 'Prêt';
+  if (count) count.textContent = '—';
+  if (visual) visual.style.background = 'conic-gradient(var(--vert-moyen) 0%, var(--beige-moyen) 0%)';
+  if (btn) btn.textContent = 'Commencer';
+  stopSound();
+}
+
+function updateCoherence() {
+  coherencePhaseTime += 0.1;
+  const duration = 5; // 5 secondes par phase
+  const progress = coherencePhaseTime / duration;
+  const remaining = Math.ceil(duration - coherencePhaseTime);
+  const phase = document.getElementById('coherence-phase');
+  const count = document.getElementById('coherence-count');
+  const visual = document.getElementById('coherence-visual');
+
+  if (coherenceIsInhale) {
+    if (phase) phase.textContent = 'Inspirez';
+    if (count) count.textContent = remaining;
+    const pct = Math.min(progress * 100, 100);
+    if (visual) visual.style.background = `conic-gradient(var(--vert-moyen) ${pct}%, var(--beige-moyen) 0%)`;
+  } else {
+    if (phase) phase.textContent = 'Expirez';
+    if (count) count.textContent = remaining;
+    const pct = Math.max((1 - progress) * 100, 0);
+    if (visual) visual.style.background = `conic-gradient(var(--vert-moyen) ${pct}%, var(--beige-moyen) 0%)`;
+  }
+
+  if (coherencePhaseTime >= duration) {
+    coherencePhaseTime = 0;
+    coherenceIsInhale = !coherenceIsInhale;
+    if (coherenceIsInhale) coherenceCycles++;
+    if (coherenceCycles >= 18) { // 3 minutes = 18 cycles
+      stopCoherence();
+      showToast('Séance terminée ✓ Bravo ! 💚');
+    }
+  }
 }
 
 // ======== MÉDITATION — CHRONOMÈTRES ========
