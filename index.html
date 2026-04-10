@@ -899,7 +899,9 @@ select.input-line {
       <h1 class="header-name">Bonjour,<br><em id="patient-first-name">—</em></h1>
       <p class="header-sub" id="patient-date"></p>
       <div class="header-actions">
-        <button class="icon-btn" onclick="logout()" title="Déconnexion">⏻</button>
+        <button class="icon-btn" onclick="showPScreen('p-parametres')" title="Paramètres">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="18" height="18"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+        </button>
       </div>
     </div>
     <div class="content">
@@ -1378,6 +1380,65 @@ select.input-line {
     </div>
   </div>
 
+  <!-- PAGE PARAMÈTRES -->
+  <div class="app-screen" id="p-parametres">
+    <div class="app-header" style="background:linear-gradient(160deg,#2a4030,#4a7255)">
+      <button class="back-btn" onclick="showPScreen('p-accueil')">‹</button>
+      <p class="header-role">Espace consultant·e</p>
+      <h1 class="header-name">Mes<br><em>Paramètres</em></h1>
+      <p class="header-sub">Gérez votre compte</p>
+    </div>
+    <div class="content">
+      <div class="section-head">
+        <h2 class="section-title">Mon compte</h2>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+          <div class="avatar av-1" style="width:52px;height:52px;font-size:22px" id="param-avatar">?</div>
+          <div>
+            <div style="font-size:16px;font-weight:500;color:var(--texte-sombre)" id="param-name">—</div>
+            <div style="font-size:13px;color:var(--texte-moyen)" id="param-email">—</div>
+          </div>
+        </div>
+        <div class="sep"></div>
+
+        <!-- Changer mot de passe -->
+        <div style="margin-top:16px">
+          <p style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce);margin-bottom:12px">Changer mon mot de passe</p>
+          <input class="input-line" type="password" placeholder="Nouveau mot de passe" id="param-new-pass">
+          <input class="input-line" type="password" placeholder="Confirmer le mot de passe" id="param-confirm-pass">
+          <button class="btn-primary" onclick="changePassword()">🔒 Mettre à jour</button>
+        </div>
+
+        <div class="sep"></div>
+
+        <!-- Mentions légales -->
+        <div style="margin-top:16px">
+          <p style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--vert-fonce);margin-bottom:12px">Mentions légales</p>
+          <div style="background:var(--beige-chaud);border-radius:14px;padding:16px;font-size:13px;color:var(--texte-moyen);line-height:1.7">
+            <p style="font-weight:500;color:var(--texte-sombre);margin-bottom:6px">Sōma — Application de Thérapie Somatique</p>
+            <p>Cette application est un outil d'accompagnement thérapeutique à usage privé, développée pour soutenir le suivi entre thérapeute et consultant·e.</p>
+            <div class="sep" style="margin:10px 0"></div>
+            <p style="font-weight:500;color:var(--texte-sombre);margin-bottom:4px">Responsable du traitement</p>
+            <p>Chloé Montagnat — Thérapeute en thérapie somatique</p>
+            <div class="sep" style="margin:10px 0"></div>
+            <p style="font-weight:500;color:var(--texte-sombre);margin-bottom:4px">Données personnelles</p>
+            <p>Les données collectées (nom, email, journal, objectifs) sont strictement confidentielles et ne sont accessibles qu'à votre thérapeute. Elles ne sont ni vendues ni partagées avec des tiers.</p>
+            <div class="sep" style="margin:10px 0"></div>
+            <p style="font-weight:500;color:var(--texte-sombre);margin-bottom:4px">Hébergement</p>
+            <p>Application hébergée sur Cloudflare (USA) et Supabase (Europe). Données chiffrées et sécurisées.</p>
+            <div class="sep" style="margin:10px 0"></div>
+            <p style="font-weight:500;color:var(--texte-sombre);margin-bottom:4px">Contact</p>
+            <p>therapie.pro84@gmail.com</p>
+          </div>
+        </div>
+
+        <div class="sep"></div>
+        <button class="btn-secondary" style="width:100%;text-align:center;margin-top:8px;color:var(--rouge-doux);border-color:var(--rouge-doux)" onclick="logout()">⏻ Se déconnecter</button>
+      </div>
+    </div>
+  </div>
+
   <!-- NAV PATIENT (5 onglets) -->
   <nav id="nav-patient">
     <button class="nav-btn active" onclick="showPScreen('p-accueil',this)" title="Accueil">
@@ -1394,6 +1455,9 @@ select.input-line {
     </button>
     <button class="nav-btn" onclick="showPScreen('p-rdv',this)" title="RDV">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </button>
+    <button class="nav-btn" onclick="showPScreen('p-parametres',this)" title="Paramètres">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     </button>
   </nav>
 </div>
@@ -1832,9 +1896,16 @@ async function loadPatientData() {
       if (p2 && p2.full_name) nameEl.textContent = p2.full_name.split(' ')[0];
     }
   }
+  // Mettre à jour page paramètres
+  const paramName = document.getElementById('param-name');
+  const paramEmail = document.getElementById('param-email');
+  const paramAvatar = document.getElementById('param-avatar');
+  if (currentProfile && paramName) {
+    paramName.textContent = currentProfile.full_name || '—';
+    if (paramEmail) paramEmail.textContent = currentProfile.email || currentUser.email || '—';
+    if (paramAvatar) paramAvatar.textContent = (currentProfile.full_name||'?')[0].toUpperCase();
+  }
   // Charger objectifs
-  const { data: objs } = await sb.from('objectives')
-    .select('*').eq('patient_id', currentUser.id).order('created_at');
   if (objs && objs.length > 0) renderPatientObjectives(objs);
   // Charger prochain RDV
   const { data: rdvs } = await sb.from('appointments')
@@ -2866,6 +2937,19 @@ async function invitePatient() {
   closeModal('modal-add-patient');
   loadTherapistData();
 }
+// ======== CHANGER MOT DE PASSE ========
+async function changePassword() {
+  const newPass = document.getElementById('param-new-pass').value;
+  const confirm = document.getElementById('param-confirm-pass').value;
+  if (!newPass || newPass.length < 6) { showToast('Minimum 6 caractères'); return; }
+  if (newPass !== confirm) { showToast('Les mots de passe ne correspondent pas'); return; }
+  const { error } = await sb.auth.updateUser({ password: newPass });
+  if (error) { showToast('Erreur : ' + error.message); return; }
+  showToast('Mot de passe mis à jour ✓ 🔒');
+  document.getElementById('param-new-pass').value = '';
+  document.getElementById('param-confirm-pass').value = '';
+}
+
 let affirmations = JSON.parse(localStorage.getItem('soma-affirmations') || '[]');
 
 function openAffirmModal() {
