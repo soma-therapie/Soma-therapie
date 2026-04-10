@@ -1389,17 +1389,34 @@ select.input-line {
   </div>
 </div>
 
-<!-- Ajouter patient -->
+<!-- Ajouter consultant -->
 <div class="modal-overlay" id="modal-add-patient">
   <div class="modal-box">
     <div class="modal-handle"></div>
     <div class="modal-title">Nouveau·elle consultant·e</div>
-    <div class="modal-sub">Un email d'invitation sera envoyé au/à la consultant·e</div>
+    <div class="modal-sub">Créer un accès pour votre consultant·e</div>
     <input class="input-line" placeholder="Prénom et nom" id="new-patient-name">
     <input class="input-line" type="email" placeholder="Adresse e-mail" id="new-patient-email">
-    <div style="display:flex;gap:10px">
-      <button class="btn-secondary" onclick="closeModal('modal-add-patient')">Annuler</button>
-      <button class="btn-primary" style="flex:1;justify-content:center" onclick="invitePatient()">📧 Envoyer l'invitation</button>
+
+    <!-- Résultat après création -->
+    <div id="new-patient-result" style="display:none;background:rgba(74,114,85,0.08);border-radius:14px;padding:16px;margin-bottom:14px;border:1px solid var(--vert-clair)">
+      <p style="font-size:13px;color:var(--vert-fonce);font-weight:500;margin-bottom:8px">✅ Compte créé avec succès !</p>
+      <p style="font-size:13px;color:var(--texte-moyen);margin-bottom:4px">Communiquez ces identifiants à votre consultant·e :</p>
+      <div style="background:white;border-radius:10px;padding:12px;margin-top:8px">
+        <p style="font-size:12px;color:var(--texte-moyen)">Email :</p>
+        <p id="result-email" style="font-size:14px;font-weight:500;color:var(--texte-sombre);margin-bottom:8px"></p>
+        <p style="font-size:12px;color:var(--texte-moyen)">Mot de passe temporaire :</p>
+        <p id="result-password" style="font-size:18px;font-weight:600;color:var(--vert-fonce);letter-spacing:0.1em"></p>
+      </div>
+      <p style="font-size:11px;color:var(--texte-moyen);margin-top:8px">⚠️ Notez ce mot de passe — il ne sera plus affiché</p>
+    </div>
+
+    <div id="new-patient-form-btns" style="display:flex;gap:10px">
+      <button class="btn-secondary" onclick="closeModal('modal-add-patient');resetAddPatientForm()">Annuler</button>
+      <button class="btn-primary" style="flex:1;justify-content:center" onclick="createPatientAccount()">Créer le compte</button>
+    </div>
+    <div id="new-patient-close-btn" style="display:none;margin-top:10px">
+      <button class="btn-primary" style="width:100%;justify-content:center" onclick="closeModal('modal-add-patient');resetAddPatientForm();loadTherapistData()">Fermer</button>
     </div>
   </div>
 </div>
@@ -2663,7 +2680,59 @@ function addResPhoto(input,gridId){
   reader.readAsDataURL(input.files[0]);
 }
 
-// ======== INVITER PATIENT ========
+// ======== CRÉER COMPTE CONSULTANT ========
+function generatePassword() {
+  const words = ['Soma', 'Ancre', 'Calme', 'Souffle', 'Terre', 'Lumiere'];
+  const word = words[Math.floor(Math.random() * words.length)];
+  const num = Math.floor(Math.random() * 900) + 100;
+  return `${word}${num}!`;
+}
+
+async function createPatientAccount() {
+  const name = document.getElementById('new-patient-name').value.trim();
+  const email = document.getElementById('new-patient-email').value.trim();
+  if (!name || !email) { showToast('Veuillez remplir le nom et l\'email'); return; }
+
+  const tempPassword = generatePassword();
+  showToast('Création du compte…');
+
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password: tempPassword,
+    options: { data: { full_name: name } }
+  });
+
+  if (error) { showToast('Erreur : ' + error.message); return; }
+
+  if (data.user) {
+    // Créer le profil
+    await sb.from('profiles').upsert({
+      id: data.user.id,
+      role: 'patient',
+      full_name: name,
+      email: email
+    });
+  }
+
+  // Afficher les identifiants
+  document.getElementById('result-email').textContent = email;
+  document.getElementById('result-password').textContent = tempPassword;
+  document.getElementById('new-patient-result').style.display = 'block';
+  document.getElementById('new-patient-form-btns').style.display = 'none';
+  document.getElementById('new-patient-close-btn').style.display = 'block';
+  document.getElementById('new-patient-name').value = '';
+  document.getElementById('new-patient-email').value = '';
+}
+
+function resetAddPatientForm() {
+  document.getElementById('new-patient-result').style.display = 'none';
+  document.getElementById('new-patient-form-btns').style.display = 'flex';
+  document.getElementById('new-patient-close-btn').style.display = 'none';
+  document.getElementById('new-patient-name').value = '';
+  document.getElementById('new-patient-email').value = '';
+}
+
+// ======== INVITER PATIENT (ancien système) ========
 async function invitePatient() {
   const name = document.getElementById('new-patient-name').value.trim();
   const email = document.getElementById('new-patient-email').value.trim();
